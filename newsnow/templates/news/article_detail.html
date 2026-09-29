@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- Title Header Layout -->
+            <h1 class="display-5 fw-bold text-dark mb-3">
+                {{ article.title }}
+            </h1>
+
+            <!-- Article Metadata Panel Layer -->
+            {% if article.author or article.created_at %}
+            <div class="d-flex align-items-center text-muted small mb-4 pb-3 border-bottom">
+                <span class="me-3">
+                    By <strong>{{ article.author.username|default:"Anonymous" }}</strong>
+                </span>
+                {% if article.created_at %}
+                <span class="text-secondary">
+                    Published {{ article.created_at|date:"F d, Y" }}
+                </span>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Preserved Paragraph Linebreaks Content Container -->
+            <div class="article-content text-secondary fs-5 mb-5" style="line-height: 1.7;">
+                {{ article.content|linebreaks }}
+            </div>
+
+            <!-- FIXED: Completely re-structured Action Blocks and conditional tag formatting hierarchies -->
+            <div class="mt-5 pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+                <!-- Navigation Anchor CTA Return Pathway -->
+                <a href="{% url 'article-list' %}" class="btn btn-outline-secondary btn-sm px-3 fw-medium">
+                    &larr; Back to Articles
+                </a>
+
+                {% if user.is_authenticated %}
+                {% if user.role == "EDITOR" or article.author == user %}
+                <!-- Conditional Management Controls Panel (Visible only to Author or Editor roles) -->
+                <div class="d-flex gap-2">
+                    <!-- FIXED: Restored opening anchor and corrected target route name properties -->
+                    <a href="{% url 'article-update' article.pk %}" class="btn btn-sm btn-primary px-3 fw-semibold">
+                        Edit Article
+                    </a>
+                    <!-- FIXED: Restored opening anchor for safe path navigation mapping -->
+                    <a href="{% url 'article-delete' article.pk %}" class="btn btn-sm btn-danger px-3 fw-semibold">
+                        Delete Article
+                    </a>
+                </div>
+                {% endif %}
+                {% endif %}
+
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

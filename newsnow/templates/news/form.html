@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- FIXED: Standardized typography layout hierarchy and added margin metrics -->
+            <h1 class="mb-4 h2 text-dark fw-bold">{{ heading|default:"Submit Entry" }}</h1>
+
+            <div class="card shadow-sm border-0">
+                <!-- FIXED: Wrapped form elements inside a proper Bootstrap card body structure -->
+                <div class="card-body p-4 bg-white rounded">
+
+                    <!-- FIXED: Added explicit "novalidate" to give priority to responsive custom alert designs -->
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <!-- FIXED: Included dynamic tracking block to catch global/cross-field validation alerts -->
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger mb-3 alert-dismissible fade show" role="alert">
+                            {% for error in form.non_field_errors %}
+                            <div class="small fw-semibold">{{ error }}</div>
+                            {% endfor %}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endif %}
+
+                        <!-- FIXED: Swapped out generic form.as_p for an accessible, styled programmatic control loop -->
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <!-- Accessibility Fix: Tied labels to their corresponding targets using id_for_label -->
+                            <label for="{{ field.id_for_label }}" class="form-label small fw-bold text-secondary mb-1">
+                                {{ field.label }}
+                            </label>
+
+                            <!-- Injected Field Hook: Ensure you inject 'form-control' via your forms.py widgets configuration -->
+                            {{ field }}
+
+                            <!-- Form field helper text guidelines -->
+                            {% if field.help_text %}
+                            <div class="form-text text-muted small mt-1">
+                                {{ field.help_text|safe }}
+                            </div>
+                            {% endif %}
+
+                            <!-- Direct individual field validation errors layout panel -->
+                            {% for error in field.errors %}
+                            <div class="invalid-feedback d-block small mt-1">
+                                {{ error }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+
+                        <!-- Action Control Block Grid Alignment -->
+                        <div class="d-grid gap-2 mt-4 pt-2">
+                            <!-- FIXED: Upgraded generic button to full width Bootstrap primary actions element -->
+                            <button type="submit" class="btn btn-primary py-2 fw-semibold">
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

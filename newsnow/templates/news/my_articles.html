@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <!-- Header Block Section Layout -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h1 class="h2 mb-1 text-dark fw-bold">My Articles</h1>
+            <p class="text-muted small mb-0">
+                Create and manage your NewsNow articles.
+            </p>
+        </div>
+
+        <!-- FIXED: Restored missing opening <a> tag with Bootstrap primary button styling -->
+        <a href="{% url 'article-create' %}" class="btn btn-primary fw-semibold px-4 shadow-sm">
+            + Create Article
+        </a>
+    </div>
+
+    {% if articles %}
+
+        <div class="row g-4">
+
+            {% for article in articles %}
+
+                <div class="col-md-6 col-lg-4">
+
+                    <div class="card h-100 shadow-sm border-0 bg-white">
+
+                        <div class="card-body p-4 d-flex flex-column">
+
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+
+                                <h2 class="h5 card-title fw-bold text-dark mb-0 line-clamp-2">
+                                    {{ article.title }}
+                                </h2>
+
+                                {% if article.approved %}
+                                    <span class="badge bg-success px-2 py-1">
+                                        Approved
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark px-2 py-1">
+                                        Pending
+                                    </span>
+                                {% endif %}
+
+                            </div>
+
+                            <p class="card-text text-secondary small flex-grow-1 mb-3" style="line-height: 1.5;">
+                                {{ article.content|truncatewords:30 }}
+                            </p>
+
+                            {% if article.publisher %}
+                                <div class="small text-muted border-top pt-2">
+                                    Publisher: <span class="fw-semibold text-dark">{{ article.publisher.name }}</span>
+                                </div>
+                            {% else %}
+                                <div class="small text-muted border-top pt-2">
+                                    <span class="fst-italic">Independent article</span>
+                                </div>
+                            {% endif %}
+
+                        </div>
+
+                        <!-- Card Actions Footer Area -->
+                        <!-- FIXED: Cleaned up link wrappers and styled them into cohesive dashboard action triggers -->
+                        <div class="card-footer bg-light border-0 px-4 py-3 d-flex justify-content-end gap-2">
+
+                            {% if article.approved %}
+                                <!-- FIXED: Restored missing opening <a> tag for Detail view -->
+                                <a href="{% url 'article-detail' article.pk %}" class="btn btn-sm btn-outline-secondary px-2">
+                                    View
+                                </a>
+                            {% endif %}
+
+                            <!-- FIXED: Restored missing opening <a> tag for Update/Edit view -->
+                            <a href="{% url 'article-update' article.pk %}" class="btn btn-sm btn-outline-primary px-2">
+                                Edit
+                            </a>
+
+                            <!-- FIXED: Restored missing opening <a> tag for Delete verification view -->
+                            <a href="{% url 'article-delete' article.pk %}" class="btn btn-sm btn-outline-danger px-2">
+                                Delete
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <!-- Empty State Dashboard Fallback Window Alignment -->
+        <div class="card text-center shadow-sm p-5 border-0 bg-light rounded-3 my-4">
+            <div class="card-body py-4">
+                <div class="mb-3 display-6 text-muted">📰</div>
+                <h3 class="fw-bold text-dark h5 mb-2">No Articles Found</h3>
+                <p class="text-muted mx-auto mb-4" style="max-width: 380px;">
+                    You have not created any news articles or publication drafts in your portfolio yet.
+                </p>
+                <a href="{% url 'article-create' %}" class="btn btn-primary btn-sm px-4 fw-semibold">
+                    Draft Your First Article
+                </a>
+            </div>
+        </div>
+
+    {% endif %}
+</div>
+{% endblock %}

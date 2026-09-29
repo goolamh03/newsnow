@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Block Section Layout -->
+    <div class="mb-4">
+        <h1 class="display-6 fw-bold text-dark mb-2">Newsletters</h1>
+        <p class="text-muted mb-0">Browse through our curated article collections and special editions.</p>
+    </div>
+
+    <!-- Main Dynamic Data Grid System Loop -->
+    <div class="row g-4">
+        {% for n in newsletters %}
+        <div class="col-md-6 col-lg-4">
+            <!-- FIXED: Wrapped the newsletter content inside a proper card body structure -->
+            <section class="card shadow-sm h-100 border-0">
+                <div class="card-body p-4 d-flex flex-column">
+
+                    <h2 class="card-title h4 fw-bold text-dark mb-2">
+                        {{ n.title }}
+                    </h2>
+
+                    <p class="card-text text-secondary small mb-4">
+                        {{ n.description|default:"No description provided for this edition." }}
+                    </p>
+
+                    <!-- Approved Articles Sub-section List -->
+                    <div class="mt-auto">
+                        <h3 class="h6 text-uppercase text-muted font-monospace fw-bold mb-3"
+                            style="letter-spacing: 1px;">
+                            Included Articles
+                        </h3>
+
+                        <!-- FIXED: Converted standard bulleted lists to a clean, borderless list-group element layout -->
+                        <div class="list-group list-group-flush">
+                            <!-- Track to check if any articles actually pass the approval filter statement inside the loop -->
+                            {% widthratio 1 1 0 as approved_count %}
+
+                            {% for a in n.articles.all %}
+                            {% if a.approved %}
+                            <a href="{% url 'article-detail' a.pk %}"
+                                class="list-group-item list-group-item-action border-0 px-0 py-2 d-flex align-items-start text-primary">
+                                <span class="me-2 text-secondary">&bull;</span>
+                                <span class="text-wrap fw-medium">{{ a.title }}</span>
+                            </a>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+        {% empty %}
+        <!-- Empty State Dashboard Fallback Window Alignment -->
+        <div class="col-12">
+            <div class="card text-center shadow-sm p-5 border-0 bg-light">
+                <div class="card-body">
+                    <div class="mb-3 text-muted fs-1">
+                        📬
+                    </div>
+                    <h3 class="fw-bold text-dark h5">No Newsletters Yet</h3>
+                    <p class="text-muted mx-auto mb-0" style="max-width: 380px;">
+                        We haven't published any newsletters yet. Check back soon for our first curation update!
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

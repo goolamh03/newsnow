@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Header Block Section Layout -->
+    <div class="d-flex justify-content-between align-items-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h1 class="h2 mb-1 text-dark fw-bold">Publisher Management</h1>
+            <p class="text-muted small mb-0">Inspect, create, or update media house profiles.</p>
+        </div>
+
+        <!-- FIXED: Added missing opening <a> tag with Bootstrap primary buttons classes -->
+        <a href="{% url 'publisher-create' %}" class="btn btn-primary fw-semibold px-4 shadow-sm">
+            + Create Publisher
+        </a>
+    </div>
+
+    <!-- Main Dynamic Data Grid System Loop -->
+    <div class="row g-3">
+        {% for publisher in publishers %}
+        <div class="col-12">
+            <div class="card shadow-sm border-0 bg-white">
+                <div
+                    class="card-body p-4 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
+
+                    <div class="publisher-meta">
+                        <h2 class="h5 fw-bold text-dark mb-1">{{ publisher.name }}</h2>
+                        <p class="text-secondary small mb-0">
+                            {{ publisher.description|default:"No description provided for this media house." }}
+                        </p>
+                    </div>
+
+                    <!-- Action Management Pathway Area -->
+                    <!-- FIXED: Added missing opening <a> tag with Bootstrap link button styling classes -->
+                    <a href="{% url 'publisher-update' publisher.pk %}"
+                        class="btn btn-sm btn-outline-primary px-3 fw-medium">
+                        Edit Publisher
+                    </a>
+
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <!-- Empty State Dashboard Fallback Window Alignment -->
+        <div class="col-12">
+            <div class="card text-center shadow-sm p-5 border-0 bg-light rounded-3">
+                <div class="card-body py-4">
+                    <div class="mb-3 display-5 text-muted">🏬</div>
+                    <h3 class="fw-bold text-dark h5 mb-2">No Publishers Found</h3>
+                    <p class="text-muted mx-auto mb-0" style="max-width: 360px;">
+                        No publishers have been created yet. Click the button above to register your first media house
+                        entry.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

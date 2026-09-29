@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h2 class="mb-0 h4 fw-bold">Log in</h2>
+                </div>
+
+                <div class="card-body p-4">
+                    <!-- FIXED: Added explicit 'novalidate' to prioritize responsive Bootstrap error styling -->
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <!-- FIXED: Critical check to catch global login failures (e.g., "Invalid username or password") -->
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger mb-3 alert-dismissible fade show" role="alert">
+                            {% for error in form.non_field_errors %}
+                            <div class="small fw-semibold">{{ error }}</div>
+                            {% endfor %}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endif %}
+
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <!-- FIXED: Tied the label to the input target using 'id_for_label' for structural accessibility -->
+                            <label for="{{ field.id_for_label }}" class="form-label small fw-bold text-secondary">
+                                {{ field.label }}
+                            </label>
+
+                            <!-- INJECTED FIELD: Renders the input element natively. -->
+                            <!-- NOTE: To apply the 'form-control' class styling, ensure it is added via widgets in forms.py -->
+                            {{ field }}
+
+                            <!-- FIXED: Standardized field validation errors layout panel using Bootstrap criteria -->
+                            {% for error in field.errors %}
+                            <div class="invalid-feedback d-block small mt-1">
+                                {{ error }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+
+                        <!-- Action Control Block Layout -->
+                        <div class="d-grid gap-2 mt-4 pt-2">
+                            <button type="submit" class="btn btn-primary py-2 fw-semibold">
+                                Log In
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
