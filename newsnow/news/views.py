@@ -91,13 +91,15 @@ def newsletter_detail(request, pk):
 @login_required
 def newsletter_create(request):
     """Allow journalists to create newsletters."""
-    if request.user.role != User.Role.JOURNALIST:
-        return HttpResponseForbidden(
-            "Only journalists may create newsletters."
-        )
+    if request.user.role not in (
+        User.Role.JOURNALIST,
+        User.Role.EDITOR,
+    ):
+        return HttpResponseForbidden()
 
     form = NewsletterForm(
         request.POST or None,
+        request.FILES or None,
         author=request.user,
     )
 
@@ -149,6 +151,7 @@ def newsletter_update(request, pk):
 
     form = NewsletterForm(
         request.POST or None,
+        request.FILES or None,
         instance=newsletter,
         author=newsletter.author,
     )
@@ -219,10 +222,13 @@ def article_create(request):
     """Allow journalists to submit articles."""
     if request.user.role != User.Role.JOURNALIST:
         return HttpResponseForbidden(
-            "Only journalists may create articles."
+            "Only journalists can create articles."
         )
 
-    form = ArticleForm(request.POST or None)
+    form = ArticleForm(
+        request.POST or None,
+        request.FILES or None,
+    )
 
     if request.method == "POST" and form.is_valid():
         article = form.save(commit=False)
@@ -359,6 +365,7 @@ def article_update(request, pk):
 
     form = ArticleForm(
         request.POST or None,
+        request.FILES or None,
         instance=article,
     )
 

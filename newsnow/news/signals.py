@@ -1,8 +1,12 @@
 """Signal handlers for the NewsNow application.
 
-Provides automatic group assignment, role-based permission setup,
-article distribution, and webhook notifications triggered by model
-and migration events.
+This module contains Django signal receivers responsible for
+automatic group assignment, role-based permission management,
+article distribution, and webhook notifications.
+
+Signal handlers are triggered by migration and model save
+events to ensure that application data, permissions, and
+notifications remain synchronized.
 """
 
 from django.contrib.auth.models import Group, Permission
@@ -15,10 +19,22 @@ import requests
 
 @receiver(post_migrate)
 def create_role_groups(sender, **kwargs):
-    """Create and configure user role groups after migrations.
+    """Create and configure NewsNow role groups.
 
-    Assigns the appropriate Django permissions to the Reader,
-    Editor, and Journalist groups.
+    Initializes the Reader, Editor, and Journalist groups
+    after database migrations and assigns the appropriate
+    Django permissions to each role.
+
+    :param sender:
+        Application configuration that triggered the signal.
+    :type sender: AppConfig
+
+    :param kwargs:
+        Additional signal arguments supplied by Django.
+    :type kwargs: dict
+
+    :return: None
+    :rtype: None
     """
     if sender.name != "news":
         return
@@ -50,10 +66,30 @@ def create_role_groups(sender, **kwargs):
 
 @receiver(post_save, sender=User)
 def assign_group_and_token(sender, instance, created, **kwargs):
-    """Assign users to role-based groups after saving.
+    """Assign role-based group membership to a user.
 
-    Updates group membership based on the user's role and
-    clears subscriptions for non-reader accounts.
+    Updates the user's Django group assignment whenever
+    the user record is saved. Non-reader users have
+    subscription relationships removed automatically.
+
+    :param sender:
+        Model class that triggered the signal.
+    :type sender: type
+
+    :param instance:
+        User instance being saved.
+    :type instance: User
+
+    :param created:
+        Indicates whether the user was newly created.
+    :type created: bool
+
+    :param kwargs:
+        Additional signal arguments supplied by Django.
+    :type kwargs: dict
+
+    :return: None
+    :rtype: None
     """
     group_name = instance.get_role_display()
 
@@ -72,8 +108,31 @@ def assign_group_and_token(sender, instance, created, **kwargs):
 def distribute_approved_article(sender, instance, **kwargs):
     """Distribute approved articles and notify subscribers.
 
-    Sends article notifications to subscribed users and
-    posts approval information to the external webhook endpoint.
+    Sends email notifications to subscribed readers and
+    publishes approval information to the configured
+    webhook endpoint.
+
+    Processing occurs only once per article approval.
+
+    :param sender:
+        Model class that triggered the signal.
+    :type sender: type
+
+    :param instance:
+        Article instance being processed.
+    :type instance: Article
+
+    :param kwargs:
+        Additional signal arguments supplied by Django.
+    :type kwargs: dict
+
+    :return: None
+    :rtype: None
+
+    :raises requests.RequestException:
+        Raised if the webhook request fails. The exception
+        is handled internally and does not interrupt signal
+        processing.
     """
     if not instance.approved or instance.approval_notified:
         return

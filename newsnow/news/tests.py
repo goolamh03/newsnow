@@ -1,8 +1,12 @@
 """Automated tests for the NewsNow application.
 
-Tests REST API endpoints, role-based access control, article and
-newsletter operations, signal processing, email notifications,
-and approved-article webhook requests.
+This module contains unit and integration tests covering
+REST API endpoints, role-based permissions, web views,
+signal processing, email notifications, newsletter
+management, and approved article webhook integrations.
+
+The tests verify application behaviour for readers,
+journalists, editors, and anonymous users.
 """
 
 from unittest.mock import patch
@@ -16,10 +20,21 @@ from .models import Article, Publisher, User, Newsletter
 
 
 class APITests(APITestCase):
-    """Test NewsNow REST API functionality and permissions."""
+    """Test REST API functionality.
+
+    Covers article management, article approval,
+    permissions, newsletter functionality, and
+    subscription-based article retrieval."""
 
     def setUp(self):
-        """Create test users, publisher, and article data."""
+        """Create test data for API tests.
+
+        Initializes reader, journalist, and editor accounts,
+        a test publisher, and an approved article used
+        throughout the API test suite.
+
+        :return: None
+        :rtype: None"""
         self.reader = User.objects.create_user(
             "reader",
             email="r@example.com",
@@ -56,7 +71,13 @@ class APITests(APITestCase):
         )
 
     def auth(self, user):
-        """Authenticate a user for API requests."""
+        """Authenticate a user for API requests.
+
+        :param user: User that should be authenticated.
+        :type user: User
+
+        :return: None
+        :rtype: None"""
         self.client.force_authenticate(user)
 
     def test_reader_only_gets_subscribed_articles(self):
@@ -99,7 +120,14 @@ class APITests(APITestCase):
         )
 
     def test_journalist_can_create_article(self):
-        """Verify journalists can create unapproved articles."""
+        """Verify a journalist can create an article.
+
+        Confirms that newly created articles are assigned
+        to the authenticated journalist and remain
+        unapproved pending editorial review.
+
+        :return: None
+        :rtype: None"""
         self.auth(self.journalist)
 
         response = self.client.post(
@@ -277,10 +305,22 @@ class APITests(APITestCase):
 
 
 class ViewTests(TestCase):
-    """Test NewsNow web views and role-based access control."""
+    """Test web views and role-based access control.
+
+    Verifies page rendering, permissions,
+    subscriptions, article management,
+    newsletter management, and registration
+    workflows."""
 
     def setUp(self):
-        """Create users, publishers, articles, and newsletters."""
+        """Create test data for view tests.
+
+        Creates users, publishers, approved articles,
+        pending articles, and newsletters used by the
+        web application test suite.
+
+        :return: None
+        :rtype: None"""
         self.reader = User.objects.create_user(
             username="view_reader",
             email="view_reader@example.com",
@@ -344,7 +384,13 @@ class ViewTests(TestCase):
         self.newsletter.articles.add(self.approved_article)
 
     def test_article_list_displays_only_approved_articles(self):
-        """Verify the article list displays only approved articles."""
+        """Verify the article detail page renders correctly.
+
+        Ensures the page loads successfully and displays
+        the expected article title and content.
+
+        :return: None
+        :rtype: None"""
         response = self.client.get(
             reverse("article-list")
         )
@@ -1020,6 +1066,37 @@ class ViewTests(TestCase):
             ),
         )
 
+    def test_duplicate_email_registration_rejected(self):
+        """Verify duplicate email addresses are rejected."""
+
+        User.objects.create_user(
+            username="user1",
+            email="duplicate@example.com",
+            password="pass12345",
+            role=User.Role.READER,
+        )
+
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "user2",
+                "email": "duplicate@example.com",
+                "role": User.Role.READER,
+                "password1": "StrongPass123!",
+                "password2": "StrongPass123!",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            "already exists",
+        )
+
     @patch("news.signals.requests.post")
     def test_editor_can_approve_article(self, mock_post):
         """Verify editors can approve pending articles."""
@@ -1474,10 +1551,21 @@ class ViewTests(TestCase):
 
 
 class WebRoleTests(TestCase):
-    """Test account-specific web functionality."""
+    """Test role-specific web functionality.
+
+    Validates the actions available to readers,
+    journalists, and editors across the web
+    application."""
 
     def setUp(self):
-        """Create role-based test records."""
+        """Create role-based test records.
+
+        Generates users, publishers, articles,
+        and newsletters required for role
+        validation tests.
+
+        :return: None
+        :rtype: None"""
         self.reader = User.objects.create_user(
             "reader-web",
             password="pass12345",
@@ -1630,10 +1718,21 @@ class WebRoleTests(TestCase):
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend"
 )
 class SignalTests(TestCase):
-    """Test signal-driven notifications and webhook integrations."""
+    """Test signal-driven functionality.
+
+    Verifies article notification processing,
+    email distribution, webhook integrations,
+    and approval tracking behaviour."""
 
     def setUp(self):
-        """Create test users and article data for signal tests."""
+        """Create test records for signal tests.
+
+        Creates users and article data required
+        to verify approval notifications and
+        webhook processing.
+
+        :return: None
+        :rtype: None"""
         self.journalist = User.objects.create_user(
             "j",
             password="pass12345",
@@ -1660,7 +1759,13 @@ class SignalTests(TestCase):
         )
 
     def auth(self, user):
-        """Authenticate a user for test requests."""
+        """Authenticate a user for test requests.
+
+        :param user: User to authenticate.
+        :type user: User
+
+        :return: None
+        :rtype: None"""
         self.client.force_authenticate(user)
 
     @patch("news.signals.requests.post")
@@ -1668,7 +1773,18 @@ class SignalTests(TestCase):
         self,
         mock_post,
     ):
-        """Verify approval sends one email and one webhook request."""
+        """Verify article approval triggers notifications.
+
+        Confirms that approval sends a single email,
+        calls the webhook endpoint once, and marks
+        the article as notified.
+
+        :param mock_post:
+            Mocked HTTP POST request object.
+        :type mock_post: Mock
+
+        :return: None
+        :rtype: None"""
         mock_post.return_value.status_code = 201
 
         self.reader.subscribed_journalists.add(

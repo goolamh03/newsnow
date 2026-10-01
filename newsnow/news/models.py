@@ -1,7 +1,12 @@
 """Data models for the NewsNow application.
 
-Defines publishers, users, articles, newsletters, and article
-approval logs used throughout the application.
+This module defines the core data structures used throughout the
+application, including publishers, users, articles, newsletters,
+and approved article logs.
+
+The models implement role-based user management, article approval
+workflows, publisher membership validation, and newsletter
+distribution functionality.
 """
 
 from django.contrib.auth.models import AbstractUser
@@ -10,7 +15,23 @@ from django.db import models
 
 
 class Publisher(models.Model):
-    """Represent a news publisher."""
+    """Represent a news publisher.
+
+    Stores publisher information and maintains relationships
+    with editors and journalists responsible for creating
+    and managing content.
+
+    :ivar str name:
+        Unique publisher name.
+
+    :ivar str description:
+        Description of the publisher.
+
+    :ivar editors:
+        Editors assigned to the publisher.
+
+    :ivar journalists:
+        Journalists assigned to the publisher."""
 
     name = models.CharField(max_length=150, unique=True)
     description = models.TextField(blank=True)
@@ -28,15 +49,41 @@ class Publisher(models.Model):
     )
 
     def __str__(self):
-        """Return the publisher name."""
+        """Return the publisher name.
+
+        :return: Publisher name.
+        :rtype: str"""
         return self.name
 
 
 class User(AbstractUser):
-    """Represent a NewsNow user."""
+    """Represent a NewsNow user.
+
+    Extends Django's built-in user model with role-based
+    functionality and subscription relationships.
+
+    Users may be readers, journalists, or editors.
+
+    :ivar str role:
+        User role within the NewsNow platform.
+
+    :ivar subscribed_publishers:
+        Publishers followed by the user.
+
+    :ivar subscribed_journalists:
+        Journalists followed by the user."""
 
     class Role(models.TextChoices):
-        """Define available NewsNow roles."""
+        """Define available NewsNow user roles.
+
+        :cvar str READER:
+            Reader role.
+
+        :cvar str EDITOR:
+            Editor role.
+
+        :cvar str JOURNALIST:
+            Journalist role."""
 
         READER = "READER", "Reader"
         EDITOR = "EDITOR", "Editor"
@@ -63,16 +110,28 @@ class User(AbstractUser):
     )
 
     def clean(self):
-        """Validate user data."""
+        """Validate user data.
+
+        Executes model-level validation before saving.
+
+        :return: None
+        :rtype: None"""
         super().clean()
 
     def save(self, *args, **kwargs):
         """
         Save the user and enforce role-specific relationships.
 
-        ManyToMany fields cannot be assigned None in Django.
-        Therefore incompatible relationships are cleared,
-        which is the equivalent of having no value.
+        Readers may subscribe to publishers and journalists.
+        Journalists and editors cannot maintain subscriber
+        relationships. Incompatible relationships are removed
+        automatically after saving.
+
+        :param args:
+            Positional arguments passed to the parent method.
+
+        :param kwargs:
+            Keyword arguments passed to the parent method.
         """
         super().save(*args, **kwargs)
 
@@ -86,7 +145,37 @@ class User(AbstractUser):
 
 
 class Article(models.Model):
-    """Represent a news article."""
+    """Represent a news article.
+
+    Stores article content created by journalists and
+    optionally associated with a publisher.
+
+    Articles require editorial approval before becoming
+    publicly available.
+
+    :ivar str title:
+        Article title.
+
+    :ivar str content:
+        Article content.
+
+    :ivar author:
+        Journalist who authored the article.
+
+    :ivar publisher:
+        Publisher associated with the article.
+
+    :ivar thumbnail:
+        Optional article thumbnail image.
+
+    :ivar created_at:
+        Timestamp indicating when the article was created.
+
+    :ivar bool approved:
+        Indicates whether the article has been approved.
+
+    :ivar bool approval_notified:
+        Indicates whether approval notifications have been sent."""
 
     title = models.CharField(max_length=200)
     content = models.TextField()
@@ -103,17 +192,38 @@ class Article(models.Model):
         blank=True,
         related_name="articles",
     )
+    thumbnail = models.ImageField(
+        upload_to="articles/",
+        blank=True,
+        null=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     approved = models.BooleanField(default=False)
     approval_notified = models.BooleanField(default=False)
 
     class Meta:
-        """Configure article ordering."""
+        """Configure article model metadata.
+
+        :ivar list ordering:
+            Default ordering by creation date in descending order."""
 
         ordering = ["-created_at"]
 
     def clean(self):
-        """Validate article author and publisher relationships."""
+        """Validate article relationships.
+
+        Ensures the article author is a journalist and,
+        when a publisher is specified, verifies that the
+        author belongs to that publisher.
+
+        :return: None
+        :rtype: None
+
+        :raises ValidationError:
+            If the author is not a journalist.
+
+        :raises ValidationError:
+            If the author does not belong to the selected publisher."""
 
         super().clean()
 
@@ -136,15 +246,44 @@ class Article(models.Model):
             )
 
     def __str__(self):
-        """Return the article title."""
+        """Return the article title.
+
+        :return: Article title.
+        :rtype: str"""
         return self.title
 
 
 class Newsletter(models.Model):
-    """Represent a collection of news articles."""
+    """Represent a newsletter.
+
+    A newsletter is a collection of approved articles
+    compiled for distribution to readers.
+
+    :ivar str title:
+        Newsletter title.
+
+    :ivar str description:
+        Newsletter description.
+
+    :ivar thumbnail:
+        Optional newsletter thumbnail image.
+
+    :ivar created_at:
+        Newsletter creation timestamp.
+
+    :ivar author:
+        Journalist who created the newsletter.
+
+    :ivar articles:
+        Articles included in the newsletter."""
 
     title = models.CharField(max_length=200)
     description = models.TextField()
+    thumbnail = models.ImageField(
+        upload_to="newsletters/",
+        blank=True,
+        null=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(
         User,
@@ -155,17 +294,29 @@ class Newsletter(models.Model):
     articles = models.ManyToManyField(Article, related_name="newsletters", blank=True)
 
     class Meta:
-        """Configure newsletter model metadata."""
+        """Configure newsletter model metadata.
+
+        :ivar list ordering:
+            Default ordering by creation date in descending order."""
 
         ordering = ["-created_at"]
 
     def __str__(self):
-        """Return the newsletter title."""
+        """Return the newsletter title.
+
+        :return: Newsletter title.
+        :rtype: str"""
         return self.title
 
 
 class ApprovedArticleLog(models.Model):
-    """Store webhook data for approved articles."""
+    """Store approval notifications for articles.
+
+    Records webhook data associated with article approvals
+    received from external services.
+
+    :ivar article:
+        Approved article associated with the log entry."""
 
     article = models.ForeignKey(
         Article, on_delete=models.CASCADE, related_name="approval_logs"
