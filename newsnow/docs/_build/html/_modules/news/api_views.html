@@ -1,0 +1,318 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>news.api_views &mdash; NewsNow 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            NewsNow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">news</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">NewsNow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">news.api_views</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for news.api_views</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""API views for the NewsNow application.</span>
+
+<span class="sd">This module provides REST API endpoints for managing articles,</span>
+<span class="sd">retrieving subscribed content, approving articles, and processing</span>
+<span class="sd">approved article webhook notifications.</span>
+
+<span class="sd">The API supports authenticated access for article management,</span>
+<span class="sd">role-based permissions, editorial approval workflows, and</span>
+<span class="sd">integration with external systems through webhook endpoints.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Q</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">generics</span><span class="p">,</span> <span class="n">status</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.permissions</span><span class="w"> </span><span class="kn">import</span> <span class="n">AllowAny</span><span class="p">,</span> <span class="n">IsAuthenticated</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.response</span><span class="w"> </span><span class="kn">import</span> <span class="n">Response</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.views</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIView</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Article</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.permissions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArticleRolePermission</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.permissions</span><span class="w"> </span><span class="kn">import</span> <span class="n">IsEditor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.serializers</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArticleSerializer</span><span class="p">,</span> <span class="n">ApprovedArticleLogSerializer</span>
+
+
+<div class="viewcode-block" id="ArticleListCreateAPI">
+<a class="viewcode-back" href="../../news.html#news.api_views.ArticleListCreateAPI">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ArticleListCreateAPI</span><span class="p">(</span><span class="n">generics</span><span class="o">.</span><span class="n">ListCreateAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""List approved articles and create new articles.</span>
+
+<span class="sd">    Authenticated users may retrieve approved articles and create</span>
+<span class="sd">    new articles subject to role-based permissions.</span>
+
+<span class="sd">    :ivar serializer_class:</span>
+<span class="sd">        Serializer used for article instances.</span>
+<span class="sd">    :ivar permission_classes:</span>
+<span class="sd">        Permissions required to access the endpoint.</span>
+<span class="sd">    """</span>
+
+    <span class="n">serializer_class</span> <span class="o">=</span> <span class="n">ArticleSerializer</span>
+    <span class="n">permission_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">IsAuthenticated</span><span class="p">,</span> <span class="n">ArticleRolePermission</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ArticleListCreateAPI.get_queryset">
+<a class="viewcode-back" href="../../news.html#news.api_views.ArticleListCreateAPI.get_queryset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_queryset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return approved articles with related author and publisher data.</span>
+
+<span class="sd">        Optimizes database access using ``select_related`` for</span>
+<span class="sd">        associated author and publisher records.</span>
+
+<span class="sd">        :return: QuerySet containing approved articles.</span>
+<span class="sd">        :rtype: QuerySet"""</span>
+        <span class="k">return</span> <span class="n">Article</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">approved</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">select_related</span><span class="p">(</span><span class="s2">"author"</span><span class="p">,</span> <span class="s2">"publisher"</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ArticleDetailAPI">
+<a class="viewcode-back" href="../../news.html#news.api_views.ArticleDetailAPI">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ArticleDetailAPI</span><span class="p">(</span><span class="n">generics</span><span class="o">.</span><span class="n">RetrieveUpdateDestroyAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Retrieve, update, or delete a specific article.</span>
+
+<span class="sd">    Provides authenticated users with access to individual article</span>
+<span class="sd">    records while enforcing role-based access control.</span>
+
+<span class="sd">    :ivar serializer_class:</span>
+<span class="sd">        Serializer used for article instances.</span>
+<span class="sd">    :ivar permission_classes:</span>
+<span class="sd">        Permissions required to access the endpoint.</span>
+<span class="sd">    """</span>
+
+    <span class="n">serializer_class</span> <span class="o">=</span> <span class="n">ArticleSerializer</span>
+    <span class="n">permission_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">IsAuthenticated</span><span class="p">,</span> <span class="n">ArticleRolePermission</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ArticleDetailAPI.get_queryset">
+<a class="viewcode-back" href="../../news.html#news.api_views.ArticleDetailAPI.get_queryset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_queryset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return articles with related author and publisher data.</span>
+
+<span class="sd">        Optimizes database access by loading related author and</span>
+<span class="sd">        publisher records in a single query.</span>
+
+<span class="sd">        :return: QuerySet containing articles.</span>
+<span class="sd">        :rtype: QuerySet"""</span>
+        <span class="k">return</span> <span class="n">Article</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">select_related</span><span class="p">(</span><span class="s2">"author"</span><span class="p">,</span> <span class="s2">"publisher"</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SubscribedArticlesAPI">
+<a class="viewcode-back" href="../../news.html#news.api_views.SubscribedArticlesAPI">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SubscribedArticlesAPI</span><span class="p">(</span><span class="n">generics</span><span class="o">.</span><span class="n">ListAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""List articles from subscribed publishers and journalists.</span>
+
+<span class="sd">    Returns approved articles published by publishers or authors</span>
+<span class="sd">    followed by the authenticated user.</span>
+
+<span class="sd">    :ivar serializer_class:</span>
+<span class="sd">        Serializer used for article instances.</span>
+<span class="sd">    :ivar permission_classes:</span>
+<span class="sd">        Permissions required to access the endpoint.</span>
+<span class="sd">    """</span>
+
+    <span class="n">serializer_class</span> <span class="o">=</span> <span class="n">ArticleSerializer</span>
+    <span class="n">permission_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">IsAuthenticated</span><span class="p">]</span>
+
+<div class="viewcode-block" id="SubscribedArticlesAPI.get_queryset">
+<a class="viewcode-back" href="../../news.html#news.api_views.SubscribedArticlesAPI.get_queryset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_queryset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return approved articles matching user subscriptions.</span>
+
+<span class="sd">        Retrieves approved articles authored by subscribed</span>
+<span class="sd">        journalists or published by subscribed publishers.</span>
+
+<span class="sd">        :return: Filtered queryset of subscribed articles.</span>
+<span class="sd">        :rtype: QuerySet"""</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">user</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">Article</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">approved</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">Q</span><span class="p">(</span><span class="n">publisher__in</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">subscribed_publishers</span><span class="o">.</span><span class="n">all</span><span class="p">())</span>
+                <span class="o">|</span> <span class="n">Q</span><span class="p">(</span><span class="n">author__in</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">subscribed_journalists</span><span class="o">.</span><span class="n">all</span><span class="p">())</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">distinct</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">select_related</span><span class="p">(</span><span class="s2">"author"</span><span class="p">,</span> <span class="s2">"publisher"</span><span class="p">)</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ApprovedArticleWebhookAPI">
+<a class="viewcode-back" href="../../news.html#news.api_views.ApprovedArticleWebhookAPI">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ApprovedArticleWebhookAPI</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Receive approved article webhook notifications.</span>
+
+<span class="sd">    Validates and stores incoming approved article data received</span>
+<span class="sd">    from external systems. Authentication is not required.</span>
+
+<span class="sd">    :ivar permission_classes:</span>
+<span class="sd">        Permissions required to access the endpoint.</span>
+<span class="sd">    """</span>
+
+    <span class="n">permission_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">AllowAny</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ApprovedArticleWebhookAPI.post">
+<a class="viewcode-back" href="../../news.html#news.api_views.ApprovedArticleWebhookAPI.post">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Create an approved article log from webhook data.</span>
+
+<span class="sd">        Validates the submitted payload and stores the resulting</span>
+<span class="sd">        approval log record.</span>
+
+<span class="sd">        :param request: Incoming HTTP request containing webhook data.</span>
+<span class="sd">        :type request: HttpRequest</span>
+
+<span class="sd">        :return: Serialized approval log data.</span>
+<span class="sd">        :rtype: Response</span>
+
+<span class="sd">        :raises ValidationError:</span>
+<span class="sd">            If submitted webhook data is invalid."""</span>
+        <span class="n">serializer</span> <span class="o">=</span> <span class="n">ApprovedArticleLogSerializer</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">data</span>
+        <span class="p">)</span>
+
+        <span class="n">serializer</span><span class="o">.</span><span class="n">is_valid</span><span class="p">(</span>
+            <span class="n">raise_exception</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="n">serializer</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
+            <span class="n">serializer</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ArticleApprovalAPIView">
+<a class="viewcode-back" href="../../news.html#news.api_views.ArticleApprovalAPIView">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ArticleApprovalAPIView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Approve an article.</span>
+
+<span class="sd">    Allows users with editor permissions to mark an article as</span>
+<span class="sd">    approved and make it available through article listing endpoints.</span>
+
+<span class="sd">    :ivar permission_classes:</span>
+<span class="sd">        Permissions required to access the endpoint.</span>
+<span class="sd">    """</span>
+
+    <span class="n">permission_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">IsEditor</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ArticleApprovalAPIView.post">
+<a class="viewcode-back" href="../../news.html#news.api_views.ArticleApprovalAPIView.post">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">pk</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Approve the specified article.</span>
+
+<span class="sd">        Updates the article approval status and returns a</span>
+<span class="sd">        confirmation response.</span>
+
+<span class="sd">        :param request: Incoming HTTP request.</span>
+<span class="sd">        :type request: HttpRequest</span>
+
+<span class="sd">        :param pk: Primary key of the article to approve.</span>
+<span class="sd">        :type pk: int</span>
+
+<span class="sd">        :return: Confirmation response indicating success.</span>
+<span class="sd">        :rtype: Response"""</span>
+        <span class="n">article</span> <span class="o">=</span> <span class="n">Article</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pk</span><span class="o">=</span><span class="n">pk</span><span class="p">)</span>
+
+        <span class="n">article</span><span class="o">.</span><span class="n">approved</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">article</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Article approved."</span><span class="p">},</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Goolam Hassen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

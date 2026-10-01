@@ -1,0 +1,399 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>news.forms &mdash; NewsNow 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            NewsNow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">news</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">NewsNow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">news.forms</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for news.forms</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Form definitions for the NewsNow application.</span>
+
+<span class="sd">This module provides forms for article management, newsletter creation,</span>
+<span class="sd">publisher management, user registration, and user authentication.</span>
+
+<span class="sd">The forms include Bootstrap styling and validation rules specific to</span>
+<span class="sd">the NewsNow platform.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">django</span><span class="w"> </span><span class="kn">import</span> <span class="n">forms</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Article</span><span class="p">,</span> <span class="n">Newsletter</span><span class="p">,</span> <span class="n">Publisher</span><span class="p">,</span> <span class="n">User</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.contrib.auth.forms</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AuthenticationForm</span><span class="p">,</span>
+    <span class="n">UserCreationForm</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="RegistrationForm">
+<a class="viewcode-back" href="../../news.html#news.forms.RegistrationForm">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RegistrationForm</span><span class="p">(</span><span class="n">UserCreationForm</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Register a NewsNow user.</span>
+
+<span class="sd">    Extends Django's ``UserCreationForm`` to support NewsNow user roles</span>
+<span class="sd">    including readers, journalists, and editors. The form also validates</span>
+<span class="sd">    email uniqueness before creating a user account.</span>
+
+<span class="sd">    :ivar ChoiceField role:</span>
+<span class="sd">        User role selection field."""</span>
+
+    <span class="n">role</span> <span class="o">=</span> <span class="n">forms</span><span class="o">.</span><span class="n">ChoiceField</span><span class="p">(</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">User</span><span class="o">.</span><span class="n">Role</span><span class="o">.</span><span class="n">READER</span><span class="p">,</span> <span class="s2">"Reader"</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">User</span><span class="o">.</span><span class="n">Role</span><span class="o">.</span><span class="n">JOURNALIST</span><span class="p">,</span> <span class="s2">"Journalist"</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">User</span><span class="o">.</span><span class="n">Role</span><span class="o">.</span><span class="n">EDITOR</span><span class="p">,</span> <span class="s2">"Editor"</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="RegistrationForm.Meta">
+<a class="viewcode-back" href="../../news.html#news.forms.RegistrationForm.Meta">[docs]</a>
+    <span class="k">class</span><span class="w"> </span><span class="nc">Meta</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Configure registration form fields.</span>
+
+<span class="sd">        :ivar User model:</span>
+<span class="sd">            The user model associated with the form.</span>
+<span class="sd">        :ivar tuple fields:</span>
+<span class="sd">            Fields displayed during user registration.</span>
+<span class="sd">        """</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">User</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"username"</span><span class="p">,</span>
+            <span class="s2">"email"</span><span class="p">,</span>
+            <span class="s2">"role"</span><span class="p">,</span>
+            <span class="s2">"password1"</span><span class="p">,</span>
+            <span class="s2">"password2"</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RegistrationForm.clean_email">
+<a class="viewcode-back" href="../../news.html#news.forms.RegistrationForm.clean_email">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean_email</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Validate that the supplied email address is unique.</span>
+
+<span class="sd">        Checks whether another user account already exists with the same</span>
+<span class="sd">        email address. A validation error is raised if a duplicate email</span>
+<span class="sd">        is found.</span>
+
+<span class="sd">        :raises ValidationError:</span>
+<span class="sd">            If the email address is already registered.</span>
+
+<span class="sd">        :return: Validated email address.</span>
+<span class="sd">        :rtype: str"""</span>
+
+        <span class="n">email</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cleaned_data</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">email__iexact</span><span class="o">=</span><span class="n">email</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">forms</span><span class="o">.</span><span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">"An account with this email address already exists."</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">email</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Apply Bootstrap styling to form fields.</span>
+
+<span class="sd">        :param args:</span>
+<span class="sd">            Positional arguments passed to the parent form.</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">            Keyword arguments passed to the parent form."""</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"role"</span><span class="p">:</span>
+                <span class="n">field</span><span class="o">.</span><span class="n">widget</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"class"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"form-select"</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">field</span><span class="o">.</span><span class="n">widget</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"class"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"form-control"</span></div>
+
+
+
+<div class="viewcode-block" id="BootstrapAuthenticationForm">
+<a class="viewcode-back" href="../../news.html#news.forms.BootstrapAuthenticationForm">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BootstrapAuthenticationForm</span><span class="p">(</span><span class="n">AuthenticationForm</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Authenticate a NewsNow user.</span>
+
+<span class="sd">    Extends Django's authentication form and applies Bootstrap</span>
+<span class="sd">    styling to all login form fields."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Apply Bootstrap styling to login form widgets.</span>
+
+<span class="sd">        :param args:</span>
+<span class="sd">            Positional arguments passed to the parent form.</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">            Keyword arguments passed to the parent form."""</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">field</span><span class="o">.</span><span class="n">widget</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"class"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"form-control"</span></div>
+
+
+
+<div class="viewcode-block" id="ArticleForm">
+<a class="viewcode-back" href="../../news.html#news.forms.ArticleForm">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ArticleForm</span><span class="p">(</span><span class="n">forms</span><span class="o">.</span><span class="n">ModelForm</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Create or update an article.</span>
+
+<span class="sd">    Provides validation and Bootstrap-styled widgets for</span>
+<span class="sd">    article management."""</span>
+
+<div class="viewcode-block" id="ArticleForm.Meta">
+<a class="viewcode-back" href="../../news.html#news.forms.ArticleForm.Meta">[docs]</a>
+    <span class="k">class</span><span class="w"> </span><span class="nc">Meta</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Configure article form fields.</span>
+
+<span class="sd">        :ivar model:</span>
+<span class="sd">            Article model associated with the form.</span>
+
+<span class="sd">        :ivar tuple fields:</span>
+<span class="sd">            Fields displayed in the form.</span>
+
+<span class="sd">        :ivar dict widgets:</span>
+<span class="sd">            Custom widgets applied to form fields."""</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Article</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"title"</span><span class="p">,</span>
+            <span class="s2">"content"</span><span class="p">,</span>
+            <span class="s2">"publisher"</span><span class="p">,</span>
+            <span class="s2">"thumbnail"</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">widgets</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"title"</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">TextInput</span><span class="p">(</span>
+                <span class="n">attrs</span><span class="o">=</span><span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"form-control"</span><span class="p">}</span>
+            <span class="p">),</span>
+            <span class="s2">"content"</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">Textarea</span><span class="p">(</span>
+                <span class="n">attrs</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"class"</span><span class="p">:</span> <span class="s2">"form-control"</span><span class="p">,</span>
+                    <span class="s2">"rows"</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">),</span>
+            <span class="s2">"publisher"</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">Select</span><span class="p">(</span>
+                <span class="n">attrs</span><span class="o">=</span><span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"form-select"</span><span class="p">}</span>
+            <span class="p">),</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NewsletterForm">
+<a class="viewcode-back" href="../../news.html#news.forms.NewsletterForm">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NewsletterForm</span><span class="p">(</span><span class="n">forms</span><span class="o">.</span><span class="n">ModelForm</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Create or update a newsletter.</span>
+
+<span class="sd">    Allows editors to create newsletters and associate</span>
+<span class="sd">    approved articles with them."""</span>
+
+<div class="viewcode-block" id="NewsletterForm.Meta">
+<a class="viewcode-back" href="../../news.html#news.forms.NewsletterForm.Meta">[docs]</a>
+    <span class="k">class</span><span class="w"> </span><span class="nc">Meta</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Configure newsletter form fields.</span>
+
+<span class="sd">        :ivar model:</span>
+<span class="sd">            Newsletter model associated with the form.</span>
+
+<span class="sd">        :ivar tuple fields:</span>
+<span class="sd">            Fields displayed in the form.</span>
+
+<span class="sd">        :ivar dict widgets:</span>
+<span class="sd">            Custom widgets applied to form fields."""</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Newsletter</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"title"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">,</span>
+            <span class="s2">"articles"</span><span class="p">,</span>
+            <span class="s2">"thumbnail"</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">widgets</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"title"</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">TextInput</span><span class="p">(</span>
+                <span class="n">attrs</span><span class="o">=</span><span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"form-control"</span><span class="p">}</span>
+            <span class="p">),</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">Textarea</span><span class="p">(</span>
+                <span class="n">attrs</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"class"</span><span class="p">:</span> <span class="s2">"form-control"</span><span class="p">,</span>
+                    <span class="s2">"rows"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">),</span>
+            <span class="s2">"articles"</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">SelectMultiple</span><span class="p">(</span>
+                <span class="n">attrs</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"class"</span><span class="p">:</span> <span class="s2">"form-select"</span><span class="p">,</span>
+                    <span class="s2">"size"</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">),</span>
+        <span class="p">}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">author</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Restrict available articles to approved content.</span>
+
+<span class="sd">        Filters the article selection list based on the</span>
+<span class="sd">        supplied author.</span>
+
+<span class="sd">        :param args:</span>
+<span class="sd">            Positional arguments passed to the parent form.</span>
+
+<span class="sd">        :param author:</span>
+<span class="sd">            User whose accessible articles should be displayed.</span>
+<span class="sd">        :type author: User or None</span>
+
+<span class="sd">        :param kwargs:</span>
+<span class="sd">            Keyword arguments passed to the parent form."""</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">author</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="s2">"articles"</span><span class="p">]</span><span class="o">.</span><span class="n">queryset</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">Article</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                    <span class="n">approved</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="PublisherForm">
+<a class="viewcode-back" href="../../news.html#news.forms.PublisherForm">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PublisherForm</span><span class="p">(</span><span class="n">forms</span><span class="o">.</span><span class="n">ModelForm</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Create or update a publisher.</span>
+
+<span class="sd">    Provides management of publisher information, assigned</span>
+<span class="sd">    editors, and assigned journalists."""</span>
+
+<div class="viewcode-block" id="PublisherForm.Meta">
+<a class="viewcode-back" href="../../news.html#news.forms.PublisherForm.Meta">[docs]</a>
+    <span class="k">class</span><span class="w"> </span><span class="nc">Meta</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Configure publisher form fields.</span>
+
+<span class="sd">        :ivar model:</span>
+<span class="sd">            Publisher model associated with the form.</span>
+
+<span class="sd">        :ivar tuple fields:</span>
+<span class="sd">            Fields displayed in the form.</span>
+
+<span class="sd">        :ivar dict widgets:</span>
+<span class="sd">            Custom widgets applied to form fields."""</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Publisher</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"name"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">,</span>
+            <span class="s2">"editors"</span><span class="p">,</span>
+            <span class="s2">"journalists"</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">widgets</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">TextInput</span><span class="p">(</span>
+                <span class="n">attrs</span><span class="o">=</span><span class="p">{</span><span class="s2">"class"</span><span class="p">:</span> <span class="s2">"form-control"</span><span class="p">}</span>
+            <span class="p">),</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">Textarea</span><span class="p">(</span>
+                <span class="n">attrs</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"class"</span><span class="p">:</span> <span class="s2">"form-control"</span><span class="p">,</span>
+                    <span class="s2">"rows"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">),</span>
+            <span class="s2">"editors"</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">SelectMultiple</span><span class="p">(</span>
+                <span class="n">attrs</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"class"</span><span class="p">:</span> <span class="s2">"form-select"</span><span class="p">,</span>
+                    <span class="s2">"size"</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">),</span>
+            <span class="s2">"journalists"</span><span class="p">:</span> <span class="n">forms</span><span class="o">.</span><span class="n">SelectMultiple</span><span class="p">(</span>
+                <span class="n">attrs</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"class"</span><span class="p">:</span> <span class="s2">"form-select"</span><span class="p">,</span>
+                    <span class="s2">"size"</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">),</span>
+        <span class="p">}</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Goolam Hassen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

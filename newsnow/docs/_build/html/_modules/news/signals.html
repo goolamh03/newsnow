@@ -1,0 +1,289 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>news.signals &mdash; NewsNow 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            NewsNow
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">news</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">NewsNow</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">news.signals</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for news.signals</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Signal handlers for the NewsNow application.</span>
+
+<span class="sd">This module contains Django signal receivers responsible for</span>
+<span class="sd">automatic group assignment, role-based permission management,</span>
+<span class="sd">article distribution, and webhook notifications.</span>
+
+<span class="sd">Signal handlers are triggered by migration and model save</span>
+<span class="sd">events to ensure that application data, permissions, and</span>
+<span class="sd">notifications remain synchronized.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.contrib.auth.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Group</span><span class="p">,</span> <span class="n">Permission</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.core.mail</span><span class="w"> </span><span class="kn">import</span> <span class="n">send_mail</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models.signals</span><span class="w"> </span><span class="kn">import</span> <span class="n">post_migrate</span><span class="p">,</span> <span class="n">post_save</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">receiver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Article</span><span class="p">,</span> <span class="n">User</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+
+<div class="viewcode-block" id="create_role_groups">
+<a class="viewcode-back" href="../../news.html#news.signals.create_role_groups">[docs]</a>
+<span class="nd">@receiver</span><span class="p">(</span><span class="n">post_migrate</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_role_groups</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Create and configure NewsNow role groups.</span>
+
+<span class="sd">    Initializes the Reader, Editor, and Journalist groups</span>
+<span class="sd">    after database migrations and assigns the appropriate</span>
+<span class="sd">    Django permissions to each role.</span>
+
+<span class="sd">    :param sender:</span>
+<span class="sd">        Application configuration that triggered the signal.</span>
+<span class="sd">    :type sender: AppConfig</span>
+
+<span class="sd">    :param kwargs:</span>
+<span class="sd">        Additional signal arguments supplied by Django.</span>
+<span class="sd">    :type kwargs: dict</span>
+
+<span class="sd">    :return: None</span>
+<span class="sd">    :rtype: None</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">sender</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">"news"</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"Reader"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"view_article"</span><span class="p">,</span> <span class="s2">"view_newsletter"</span><span class="p">],</span>
+        <span class="s2">"Editor"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"view_article"</span><span class="p">,</span>
+            <span class="s2">"change_article"</span><span class="p">,</span>
+            <span class="s2">"delete_article"</span><span class="p">,</span>
+            <span class="s2">"view_newsletter"</span><span class="p">,</span>
+            <span class="s2">"change_newsletter"</span><span class="p">,</span>
+            <span class="s2">"delete_newsletter"</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="s2">"Journalist"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"add_article"</span><span class="p">,</span>
+            <span class="s2">"view_article"</span><span class="p">,</span>
+            <span class="s2">"change_article"</span><span class="p">,</span>
+            <span class="s2">"delete_article"</span><span class="p">,</span>
+            <span class="s2">"add_newsletter"</span><span class="p">,</span>
+            <span class="s2">"view_newsletter"</span><span class="p">,</span>
+            <span class="s2">"change_newsletter"</span><span class="p">,</span>
+            <span class="s2">"delete_newsletter"</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="p">}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">codes</span> <span class="ow">in</span> <span class="n">mapping</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">group</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">Group</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get_or_create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">permissions</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">Permission</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">codename__in</span><span class="o">=</span><span class="n">codes</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="assign_group_and_token">
+<a class="viewcode-back" href="../../news.html#news.signals.assign_group_and_token">[docs]</a>
+<span class="nd">@receiver</span><span class="p">(</span><span class="n">post_save</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="n">User</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">assign_group_and_token</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">created</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Assign role-based group membership to a user.</span>
+
+<span class="sd">    Updates the user's Django group assignment whenever</span>
+<span class="sd">    the user record is saved. Non-reader users have</span>
+<span class="sd">    subscription relationships removed automatically.</span>
+
+<span class="sd">    :param sender:</span>
+<span class="sd">        Model class that triggered the signal.</span>
+<span class="sd">    :type sender: type</span>
+
+<span class="sd">    :param instance:</span>
+<span class="sd">        User instance being saved.</span>
+<span class="sd">    :type instance: User</span>
+
+<span class="sd">    :param created:</span>
+<span class="sd">        Indicates whether the user was newly created.</span>
+<span class="sd">    :type created: bool</span>
+
+<span class="sd">    :param kwargs:</span>
+<span class="sd">        Additional signal arguments supplied by Django.</span>
+<span class="sd">    :type kwargs: dict</span>
+
+<span class="sd">    :return: None</span>
+<span class="sd">    :rtype: None</span>
+<span class="sd">    """</span>
+    <span class="n">group_name</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">get_role_display</span><span class="p">()</span>
+
+    <span class="n">instance</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="n">group</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">Group</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get_or_create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">group_name</span><span class="p">)</span>
+
+    <span class="n">instance</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">instance</span><span class="o">.</span><span class="n">role</span> <span class="o">!=</span> <span class="n">User</span><span class="o">.</span><span class="n">Role</span><span class="o">.</span><span class="n">READER</span><span class="p">:</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">subscribed_publishers</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">subscribed_journalists</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="distribute_approved_article">
+<a class="viewcode-back" href="../../news.html#news.signals.distribute_approved_article">[docs]</a>
+<span class="nd">@receiver</span><span class="p">(</span><span class="n">post_save</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="n">Article</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">distribute_approved_article</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Distribute approved articles and notify subscribers.</span>
+
+<span class="sd">    Sends email notifications to subscribed readers and</span>
+<span class="sd">    publishes approval information to the configured</span>
+<span class="sd">    webhook endpoint.</span>
+
+<span class="sd">    Processing occurs only once per article approval.</span>
+
+<span class="sd">    :param sender:</span>
+<span class="sd">        Model class that triggered the signal.</span>
+<span class="sd">    :type sender: type</span>
+
+<span class="sd">    :param instance:</span>
+<span class="sd">        Article instance being processed.</span>
+<span class="sd">    :type instance: Article</span>
+
+<span class="sd">    :param kwargs:</span>
+<span class="sd">        Additional signal arguments supplied by Django.</span>
+<span class="sd">    :type kwargs: dict</span>
+
+<span class="sd">    :return: None</span>
+<span class="sd">    :rtype: None</span>
+
+<span class="sd">    :raises requests.RequestException:</span>
+<span class="sd">        Raised if the webhook request fails. The exception</span>
+<span class="sd">        is handled internally and does not interrupt signal</span>
+<span class="sd">        processing.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">instance</span><span class="o">.</span><span class="n">approved</span> <span class="ow">or</span> <span class="n">instance</span><span class="o">.</span><span class="n">approval_notified</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">publisher_emails</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="n">subscribers</span><span class="o">.</span><span class="n">exclude</span>
+             <span class="p">(</span><span class="n">email</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">values_list</span><span class="p">(</span><span class="s2">"email"</span><span class="p">,</span> <span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">instance</span><span class="o">.</span><span class="n">publisher</span>
+        <span class="k">else</span> <span class="p">[]</span>
+    <span class="p">)</span>
+    <span class="n">journalist_emails</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">journalist_subscribers</span><span class="o">.</span><span class="n">exclude</span>
+        <span class="p">(</span><span class="n">email</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">values_list</span><span class="p">(</span><span class="s2">"email"</span><span class="p">,</span> <span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">recipients</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">publisher_emails</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">journalist_emails</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">recipients</span><span class="p">:</span>
+        <span class="n">send_mail</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"NewsNow: </span><span class="si">{</span><span class="n">instance</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="n">recipients</span><span class="p">,</span>
+            <span class="n">fail_silently</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="s2">"http://127.0.0.1:8000/api/approved/"</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"article"</span><span class="p">:</span> <span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">,</span>
+                <span class="s2">"payload"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"article"</span><span class="p">:</span> <span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">,</span>
+                    <span class="s2">"title"</span><span class="p">:</span> <span class="n">instance</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+                    <span class="s2">"author"</span><span class="p">:</span> <span class="n">instance</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+                    <span class="s2">"publisher"</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="n">instance</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="n">name</span>
+                        <span class="k">if</span> <span class="n">instance</span><span class="o">.</span><span class="n">publisher</span>
+                        <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">RequestException</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">Article</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">pk</span><span class="o">=</span><span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">approval_notified</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Goolam Hassen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
