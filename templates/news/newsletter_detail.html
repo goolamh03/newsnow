@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+
+            <!-- Main Newsletter Presentation Card -->
+            <div class="card shadow-sm border-0 bg-white rounded-3 mb-4">
+                <div class="card-body p-4 p-md-5">
+
+                    <h1 class="card-title display-6 fw-bold text-dark mb-2">
+                        {{ newsletter.title }}
+                    </h1>
+
+                    <p class="text-muted small mb-4">
+                        By <span class="fw-semibold text-secondary">{{ newsletter.author.username }}</span>
+                        &bull; Published on {{ newsletter.created_at|date:"d M Y" }}
+                    </p>
+
+                    <div class="card-text text-secondary fs-5 mb-4 lh-base">
+                        {{ newsletter.description|linebreaks }}
+                    </div>
+
+                    <hr class="my-4 opacity-25">
+
+                    <h2 class="h4 text-dark fw-bold mb-3">Included Articles</h2>
+
+                    <!-- Articles Iteration Grid Loop -->
+                    <div class="row g-3">
+                        {% for article in newsletter.articles.all %}
+                        {% if article.approved %}
+                        <div class="col-12">
+                            <div class="card shadow-sm border-0 bg-light">
+                                <div
+                                    class="card-body p-4 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
+
+                                    <div class="article-meta flex-grow-1">
+                                        <h3 class="h5 fw-bold text-dark mb-1">
+                                            {{ article.title }}
+                                        </h3>
+                                        <p class="card-text text-muted small mb-0">
+                                            {{ article.content|truncatewords:30 }}
+                                        </p>
+                                    </div>
+
+                                    <!-- FIXED: Restored missing opening <a> tag with custom link layout classes -->
+                                    <a href="{% url 'article-detail' article.pk %}"
+                                        class="btn btn-sm btn-outline-primary px-3 fw-semibold flex-shrink-0">
+                                        Read Article &rarr;
+                                    </a>
+
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-info border-0 shadow-sm" role="alert">
+                                This newsletter does not contain any articles.
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Administrative Control Panel Boundary Section -->
+                    {% if user.is_authenticated %}
+                    {% if user.role == "EDITOR" or newsletter.author == user %}
+                    <div class="mt-5 pt-4 border-top d-flex flex-wrap gap-2">
+
+                        <!-- FIXED: Restored missing opening <a> tag with Bootstrap primary buttons classes -->
+                        <a href="{% url 'newsletter-update' newsletter.pk %}"
+                            class="btn btn-primary fw-semibold px-4 shadow-sm">
+                            Edit Newsletter
+                        </a>
+
+                        <!-- FIXED: Restored missing opening <a> tag with Bootstrap danger buttons classes -->
+                        <a href="{% url 'newsletter-delete' newsletter.pk %}"
+                            class="btn btn-danger fw-semibold px-4 shadow-sm">
+                            Delete Newsletter
+                        </a>
+
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                </div>
+            </div>
+
+            <!-- Global Fallback Back-button Footer Navigation -->
+            <div class="mb-5">
+                <a href="{% url 'newsletter-list' %}" class="btn btn-link text-decoration-none text-muted small ps-0">
+                    &larr; Back to Newsletters
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

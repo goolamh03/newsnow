@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Welcome Header Section Layout -->
+    <div class="p-5 mb-4 bg-light rounded-3 shadow-sm border-start border-primary border-4">
+        <div class="container-fluid py-2">
+            <h1 class="display-5 fw-bold text-dark mb-2">
+                Articles
+            </h1>
+
+            <p class="col-md-8 fs-5 text-muted mb-0">
+                Welcome to NewsNow. Explore the latest breaking stories,
+                analysis, and insights.
+            </p>
+        </div>
+    </div>
+
+    <!-- Dynamic Grid Content Evaluation Frame -->
+    {% if articles %}
+    <div class="row g-4">
+
+        {% for article in articles %}
+        <div class="col-md-6 col-lg-4">
+
+            <article class="card shadow-sm h-100 border-0 position-relative bg-white overflow-hidden">
+
+                <!-- Category Badge -->
+                {% if article.category %}
+                <div class="position-absolute top-0 start-0 m-3 z-1">
+                    <span class="badge bg-primary text-white text-uppercase font-monospace px-2 py-1">
+                        {{ article.category }}
+                    </span>
+                </div>
+                {% endif %}
+
+                <!-- FIXED: Wrapped the Large Thumbnail string inside a valid HTML image tag element -->
+
+                <div class="card-body d-flex flex-column p-4">
+
+                    <!-- Content Layout Header Row -->
+                    <div class="d-flex gap-3 mb-3 align-items-start flex-grow-1">
+
+                        <!-- FIXED: Removed raw path string and embedded as a small square preview avatar image -->
+                        {% if article.thumbnail and not article.category %}
+                        <div style="width: 100px; height: 80px;" class="flex-shrink-0 rounded overflow-hidden">
+                            <img src="{{ article.thumbnail.url }}" alt="" class="w-100 h-100 object-fit-cover">
+                        </div>
+                        {% endif %}
+
+                        <div class="flex-grow-1">
+                            <h2 class="h5 card-title fw-bold text-dark mb-2 line-clamp-2">
+                                {{ article.title }}
+                            </h2>
+
+                            <p class="card-text text-secondary small mb-0">
+                                {{ article.content|truncatewords:15 }}
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <!-- Author Metadata & Action Panel -->
+                    <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+
+                        <div class="text-muted small">
+                            By
+                            <span class="fw-semibold text-dark">
+                                {% if article.author %}
+                                {{ article.author.username }}
+                                {% else %}
+                                Staff Writer
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <!-- FIXED: Restored the missing opening <a> anchor element with clean Bootstrap layout buttons -->
+                        <a href="{% url 'article-detail' article.pk %}"
+                            class="btn btn-sm btn-outline-primary px-3 fw-semibold">
+                            Read Article &rarr;
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </article>
+
+        </div>
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <!-- Empty State -->
+    <div class="text-center py-5 my-5">
+        <div class="text-muted display-4 mb-3">📰</div>
+        <h3 class="fw-bold text-dark">No Articles Found</h3>
+        <p class="text-muted mx-auto" style="max-width: 360px;">
+            Check back later! Our journalists are currently drafting new stories for release.
+        </p>
+    </div>
+
+    {% endif %}
+
+</div>
+{% endblock %}

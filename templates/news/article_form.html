@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if article %}
+Edit Article
+{% else %}
+Create Article
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h1 class="h3 mb-4">
+                {% if article %}
+                Edit Article
+                {% else %}
+                Create Article
+                {% endif %}
+            </h1>
+
+            <form method="post" novalidate enctype="multipart/form-data">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">
+                        {{ field.label }}
+                    </label>
+
+                    {{ field }}
+
+                    {% if field.help_text %}
+                    <div class="form-text">
+                        {{ field.help_text|safe }}
+                    </div>
+                    {% endif %}
+
+                    {% for error in field.errors %}
+                    <div class="text-danger">
+                        {{ error }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        {% if article %}
+                        Save Changes
+                        {% else %}
+                        Create Article
+                        {% endif %}
+                    </button>
+
+                    <a href="{% url 'my-articles' %}" class="btn btn-outline-secondary ms-2">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

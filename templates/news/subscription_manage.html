@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+
+    <h1 class="mb-4 h2 text-dark fw-bold">Manage Subscriptions</h1>
+
+    <div class="row g-4">
+        <!-- 1. Publishers Segment Column -->
+        <div class="col-md-6">
+            <h2 class="h4 mb-3 text-secondary fw-semibold">Publishers</h2>
+
+            {% for publisher in publishers %}
+            <div class="card mb-3 shadow-sm border-0 bg-white">
+                <div class="card-body p-4">
+                    <h3 class="h5 card-title text-dark fw-bold">{{ publisher.name }}</h3>
+                    <p class="card-text text-muted small mb-3">
+                        {% if publisher.description %}
+                        {{ publisher.description }}
+                        {% else %}
+                        No description provided.
+                        {% endif %}
+                    </p>
+
+                    <!-- ENHANCED: Form submission tracking hook attached for seamless async AJAX processing -->
+                    <form action="{% url 'toggle-publisher-subscription' publisher.pk %}" method="POST"
+                        class="subscription-form m-0 p-0">
+                        {% csrf_token %}
+
+                        {% if publisher in user.subscribed_publishers.all %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger px-4 fw-semibold w-auto">
+                            Unsubscribe
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-primary px-4 fw-semibold w-auto">
+                            Subscribe
+                        </button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info border-0 shadow-sm" role="alert">
+                No publishers are currently available to subscribe to.
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- 2. Journalists Segment Column -->
+        <div class="col-md-6">
+            <h2 class="h4 mb-3 text-secondary fw-semibold">Journalists</h2>
+
+            {% for journalist in journalists %}
+            <div class="card mb-3 shadow-sm border-0 bg-white">
+                <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                    <div class="user-meta">
+                        <h3 class="h5 card-title text-dark fw-bold mb-1">{{ journalist.username }}</h3>
+                        <span class="badge bg-warning text-dark font-monospace small">Journalist</span>
+                    </div>
+
+                    <!-- ENHANCED: Form submission tracking hook attached for seamless async AJAX processing -->
+                    <form action="{% url 'toggle-journalist-subscription' journalist.pk %}" method="POST"
+                        class="subscription-form m-0 p-0">
+                        {% csrf_token %}
+
+                        {% if journalist in user.subscribed_journalists.all %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger px-4 fw-semibold">
+                            Unsubscribe
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-primary px-4 fw-semibold">
+                            Subscribe
+                        </button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info border-0 shadow-sm" role="alert">
+                No journalists are currently available to subscribe to.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- OPTIONAL ENHANCEMENT: Native asynchronous background worker routine -->
+<script>
+    document.querySelectorAll('.subscription-form').forEach(form => {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault(); // Blocks the heavy page reload behavior
+
+            const button = this.querySelector('button[type="submit"]');
+            const url = this.getAttribute('action');
+            const csrfToken = this.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            // Optimistically toggle UI button state weights instantly for extreme snappiness
+            const isSubscribed = button.classList.contains('btn-primary');
+            if (isSubscribed) {
+                button.className = 'btn btn-sm btn-outline-danger px-4 fw-semibold';
+                button.textContent = 'Unsubscribe';
+            } else {
+                button.className = 'btn btn-sm btn-primary px-4 fw-semibold';
+                button.textContent = 'Subscribe';
+            }
+
+            // Asynchronously dispatch data synchronization payload straight to the server
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network synchronization sync failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Subscription sync error:', error);
+                    // Graceful fallback: Revert button visually if network connectivity crashes
+                    if (isSubscribed) {
+                        button.className = 'btn btn-sm btn-primary px-4 fw-semibold';
+                        button.textContent = 'Subscribe';
+                    } else {
+                        button.className = 'btn btn-sm btn-outline-danger px-4 fw-semibold';
+                        button.textContent = 'Unsubscribe';
+                    }
+                });
+        });
+    });
+</script>
+{% endblock %}
