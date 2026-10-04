@@ -1,253 +1,328 @@
 # NewsNow
 
-A Django-based news management platform that enables journalists to create articles, editors to review and approve content, and readers to consume approved articles. The application includes role-based access control, publisher subscriptions, newsletters, approval workflows, JWT-secured REST APIs, webhook integration, automated testing, and MariaDB persistence.
+NewsNow is a Django-based news management platform that enables journalists to create articles and newsletters, editors to review and approve content, and readers to view approved content and manage subscriptions. The application includes role-based access control, publisher and journalist subscriptions, approval workflows, JWT-secured REST APIs, webhook integration, automated testing, Sphinx documentation, MariaDB persistence, and Docker support.
 
-## Installation and Execution
+## Table of Contents
 
-The following instructions explain how to run NewsNow locally with a
-Python virtual environment, generate the Sphinx documentation, and run
-the application in Docker.
+- [Features](#features)
+- [User Roles](#user-roles)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [Local Installation](#local-installation)
+- [Environment Variables and Secrets](#environment-variables-and-secrets)
+- [MariaDB Setup](#mariadb-setup)
+- [Run the Application Locally](#run-the-application-locally)
+- [Run Automated Tests](#run-automated-tests)
+- [REST API](#rest-api)
+- [Sphinx Documentation](#sphinx-documentation)
+- [Running with Docker](#running-with-docker)
+- [Security](#security)
+- [Capstone Submission](#capstone-submission)
 
-### Clone the Repository
-
-## 📋 Functional Requirements
-
-The system provides the following core functionality:
+## Features
 
 ### User Management
-* **User registration and authentication** workflows.
-* **Support for multiple specific user roles:**
-  * Reader
-  * Journalist
-  * Editor
-* **Role-based access control (RBAC)** enforcements applied universally throughout the application session layers.
+
+- User registration and authentication.
+- Reader, Journalist, and Editor roles.
+- Role-based access control across web views and API endpoints.
 
 ### Article Management
-* **Journalists can:**
-  * Create articles.
-  * Update their own articles.
-  * Delete their own articles.
-* **Editors can:**
-  * View all pending articles in the moderation loop.
-  * Approve submitted articles.
-  * Update any article database entry.
-  * Delete any article database entry.
-* **Readers can:**
-  * View approved articles only.
+
+Journalists can:
+
+- Create articles.
+- Update their own articles.
+- Delete their own articles.
+- Submit articles for editorial approval.
+
+Editors can:
+
+- View pending articles.
+- Review and approve submitted articles.
+- Update articles.
+- Delete articles.
+
+Readers can:
+
+- View approved articles.
+- Browse content from subscribed publishers and journalists.
 
 ### Publisher Management
-* Publishers can be associated with journalists.
-* Articles are linked explicitly to publishers.
-* Readers can subscribe to publishers.
+
+- Publishers can be associated with editors and journalists.
+- Articles can be linked to publishers.
+- Readers can subscribe to publishers.
 
 ### Subscription Management
-* **Readers can subscribe to:**
-  * Publishers
-  * Journalists
-* Readers can retrieve content only from subscribed sources.
+
+Readers can subscribe to:
+
+- Publishers.
+- Journalists.
 
 ### Newsletter Management
-* Journalists can create newsletters.
-* Newsletters can contain multiple articles.
-* Readers can browse available newsletters.
+
+- Journalists can create and manage newsletters.
+- Newsletters can contain multiple articles.
+- Readers can browse available newsletters.
 
 ### Approval Workflow
-1. Journalist creates an article.
-2. Article is stored natively as unapproved.
-3. Editor reviews the article in the approval block queue.
-4. Editor approves the article.
-5. Article becomes instantly visible to readers.
 
-### Notifications and Webhooks
-* Subscribers receive notifications when articles are approved.
-* Article approval triggers an external webhook payload call.
-* Approval events are logged asynchronously in the database.
-* Duplicate notifications are safely prevented using the `approval_notified` state boolean flag.
+1. A journalist creates an article.
+2. The article is stored as unapproved.
+3. An editor reviews the article in the approval queue.
+4. The editor approves the article.
+5. The approved article becomes visible to readers.
+6. Approval notification and webhook behaviour is triggered according to the application configuration.
 
----
+## User Roles
 
-## 🛠️ REST API
+| Role | Main permissions |
+|---|---|
+| Reader | View approved articles and newsletters, and manage subscriptions. |
+| Journalist | Create and manage the journalist's own articles and newsletters. |
+| Editor | Review, approve, update, and delete articles and newsletters as permitted by the application. |
 
-The application exposes RESTful APIs for handling authentication and application workflows.
+## Technology Stack
 
-### Non-Functional Requirements
+- Python
+- Django
+- Django REST Framework
+- Simple JWT
+- MariaDB
+- Sphinx
+- Docker
+- Bootstrap
+- HTML and CSS
 
-#### Performance
-* Database queries optimized using:
-  * `select_related()` for forward foreign key lookups.
-  * `prefetch_related()` for many-to-many and reverse relation lookups.
-* Efficient retrieval metrics for processing nested subscription content.
+## Project Structure
 
-#### Reliability
-* **Automated unit tests covering:**
-  * Models
-  * Permissions Matrix
-  * API Views
-  * Signals
-  * Approval workflow pipelines
+The repository contains the Django project, application code, templates, static assets, generated Sphinx documentation, Docker configuration, dependency declarations, and submission files.
 
-#### Maintainability
-* Google-style docstrings applied to all modules, view objects, and serialization classes.
-* Modular Django application directory architecture.
-* Clean separation of concerns between Models, Forms, Views, Serializers, APIs, and Signals.
+Key files and directories include:
 
-#### Scalability
-* REST APIs fully decoupled to support future front-end framework integrations.
-* JWT stateless authentication supports mobile app bundles and SPA clients.
+```text
+newsnow/
+├── .env.example
+├── .gitignore
+├── Dockerfile
+├── README.md
+├── capstone.txt
+├── manage.py
+├── requirements.txt
+├── docs/
+├── news/
+├── newsnow/
+├── static/
+└── templates/
+```
 
-#### Usability
-* Bootstrap-based mobile-responsive user navigation layouts.
-* Role-based visibility logic hiding functional elements dynamically.
+The exact application directories may vary slightly according to the committed project structure.
 
----
+## Local Installation
 
-## 🔒 Security Requirements
+The following instructions use Windows PowerShell.
 
-### Authentication
-The application leverages stateless **JSON Web Token (JWT)** authentication tokens:
-1. **Access Token:** Short-lived token included in headers to verify execution privileges.
-2. **Refresh Token:** Long-lived token used to generate fresh access configurations safely.
-
-* **Authentication Token Generation Endpoint:** `POST /api/token/`
-
-### Authorization
-Role restrictions are applied to endpoints matching the following access mapping matrix:
-
-| Role | Permitted Route Actions |
-| :--- | :--- |
-| **Reader** | View approved articles only |
-| **Journalist** | Create and manage own articles |
-| **Editor** | Approve, inspect, and manage all articles |
-
-### Data Protection
-* Passwords stored securely using standard Django Argon2 or BCrypt PBKDF2 hashing.
-* CSRF protection middleware enabled for all browser-facing HTML web forms.
-* Authentication verification required for all protected backend endpoints.
-* Unauthorized or missing tokens return standard `401 Unauthorized` or `403 Forbidden` JSON bodies.
-
-### Webhook Security
-* Only verified article approval events trigger webhook requests.
-* All outbound execution events are logged with precise timestamps.
-* Duplicate webhook calls are safely blocked.
-
----
-
-### 🚀 Setup on Windows PowerShell
-
-#### Step 1: Clone the Repository
+### 1. Clone the Repository
 
 ```powershell
 git clone https://github.com/goolamh03/newsnow
-```
-
-#### Step 2: Navigate into the Project Folder
-
-```powershell
 cd newsnow
 ```
 
-#### Step 3: Create a Virtual Environment
+### 2. Create a Virtual Environment
 
 ```powershell
 py -m venv .venv
 ```
 
-This creates the `.venv` folder inside the project directory.
-
-#### Step 4: Activate the Virtual Environment
+### 3. Activate the Virtual Environment
 
 ```powershell
 .venv\Scripts\Activate.ps1
 ```
 
-#### Step 5: Install Dependencies
+If PowerShell blocks activation scripts, allow scripts for the current terminal session and activate the environment again:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.venv\Scripts\Activate.ps1
+```
+
+### 4. Upgrade pip and Install Dependencies
 
 ```powershell
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-#### Step 6: Create Environment Configuration
+### 5. Create the Local Environment File
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-### Configure MariaDB Core Database Engine
-Log into your local MariaDB instance and execute the structural database creation script:
+Open `.env` and replace the placeholders with local configuration values. Variable names must match `.env.example` and the Django settings module.
+
+## Environment Variables and Secrets
+
+The `.env.example` file documents the configuration variables required by the application and must contain placeholder values only.
+
+Depending on the committed application configuration, local values may include:
+
+- Django secret key.
+- Debug setting.
+- Allowed hosts.
+- MariaDB database name.
+- MariaDB username.
+- MariaDB password.
+- MariaDB host and port.
+- Email or webhook configuration used by the application.
+
+Do not commit:
+
+- `.env`
+- Passwords
+- Access tokens
+- API keys
+- Private keys
+- Production credentials
+
+The `.gitignore` file must exclude `.env` and virtual-environment folders. Commit `.env.example` only when it contains safe placeholders and no real secrets.
+
+## MariaDB Setup
+
+Log in to MariaDB with an account that can create databases and users, then run:
 
 ```sql
 CREATE DATABASE newsnow_db
-CHARACTER SET utf8mb4
-COLLATE utf8mb4_unicode_ci;
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
 
 CREATE USER 'newsnow_user'@'localhost'
-IDENTIFIED BY 'your_password';
+    IDENTIFIED BY 'your_password';
 
-GRANT ALL PRIVILEGES ON newsnow_db.* TO 'newsnow_user'@'localhost';
+GRANT ALL PRIVILEGES ON newsnow_db.*
+    TO 'newsnow_user'@'localhost';
+
 FLUSH PRIVILEGES;
 ```
 
-### Run Migrations & Boot Server
+Replace `your_password` with a private local password and update the corresponding values in `.env`. Do not commit the password.
+
+## Run the Application Locally
+
+Apply the database migrations:
+
 ```powershell
-python manage.py makemigrations news
 python manage.py migrate
+```
+
+Create an administrator account if required:
+
+```powershell
 python manage.py createsuperuser
+```
+
+Start the Django development server:
+
+```powershell
 python manage.py runserver
 ```
 
----
+Open the application at:
 
-## 🛑 API Endpoints Index
+```text
+http://127.0.0.1:8000/
+```
+
+Stop the server by pressing `Ctrl+C` in the terminal.
+
+## Run Automated Tests
+
+Run the Django test suite:
+
+```powershell
+python manage.py test
+```
+
+Generate a terminal coverage report:
+
+```powershell
+coverage run manage.py test
+coverage report -m
+```
+
+Generate and open the HTML coverage report:
+
+```powershell
+coverage html
+start htmlcov\index.html
+```
+
+Run a Python syntax compilation check:
+
+```powershell
+python -m compileall .
+```
+
+## REST API
+
+The application exposes REST API endpoints for authentication and NewsNow workflows.
 
 ### Authentication
-* `POST /api/token/` - Obtain a new pair of JWT Access and Refresh tokens.
-* `POST /api/token/refresh/` - Refresh an expired access token using a valid refresh token.
 
-### Articles Management
-* `GET /api/articles/` - List accessible articles (filtered by role and approval status).
-* `POST /api/articles/` - Create a new article draft (Journalists only).
-* `GET /api/articles/<id>/` - Inspect a single article detail record.
-* `PUT /api/articles/<id>/` - Modify article contents (Owner or Editor only).
-* `DELETE /api/articles/<id>/` - Permanently remove an article record (Owner or Editor only).
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/token/` | Obtain JWT access and refresh tokens. |
+| POST | `/api/token/refresh/` | Refresh an access token. |
 
-### Subscribed Feed Filters
-* `GET /api/articles/subscribed/` - Retrieve an aggregated timeline of articles from subscribed profiles.
+### Articles
 
-### Article Moderation Actions
-* `POST /api/articles/<id>/approve/` - Approve a pending article submission (Editors only).
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/articles/` | List articles permitted for the authenticated user. |
+| POST | `/api/articles/` | Create an article as an authorized journalist. |
+| GET | `/api/articles/<id>/` | Retrieve an article. |
+| PUT | `/api/articles/<id>/` | Update an article when authorized. |
+| DELETE | `/api/articles/<id>/` | Delete an article when authorized. |
+| GET | `/api/articles/subscribed/` | Retrieve articles from subscribed sources. |
+| POST | `/api/articles/<id>/approve/` | Approve a pending article as an authorized editor. |
+| POST | `/api/approved/` | Receive an article-approval webhook payload. |
 
-### Webhook Endpoint Integrations
-* `POST /api/approved/` - Destination receiver endpoint for handling approval automated callback webhooks.
+### JWT Example
 
----
+Request:
 
-## 🧪 Testing APIs with Postman / cURL
+```http
+POST /api/token/
+Content-Type: application/json
+```
 
-* **Local Development Base URL:** `http://127.0.0.1:8000`
-
-### Step 1: Obtain a Valid JWT Token
-* **Request:** `POST /api/token/`
-* **Payload Body (JSON):**
 ```json
 {
   "username": "journalist1",
-  "password": "Test12345!"
+  "password": "your_password"
 }
 ```
-* **Expected Response:**
-```json
-{
-  "refresh": "eyJhbGciOiJIUzI1NiIsIn...",
-  "access": "eyJhbGciOiJIUzI1NiIsIn..."
-}
-```
-> 💡 **Usage Note:** Attach the received `access` key parameter as an HTTP header on all subsequent requests: `Authorization: Bearer <access_token>`
 
-### Step 2: Create a New Article Draft
-* **Request:** `POST /api/articles/`
-* **Headers:** `Authorization: Bearer <journalist_token>`
-* **Payload Body (JSON):**
+Use the returned access token in subsequent protected requests:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+Do not place real passwords or tokens in the repository.
+
+### Create an Article Example
+
+```http
+POST /api/articles/
+Authorization: Bearer <journalist_token>
+Content-Type: application/json
+```
+
 ```json
 {
   "title": "My First News Article",
@@ -255,85 +330,123 @@ python manage.py runserver
   "publisher": 1
 }
 ```
-* **Expected Response:**
-```json
-{
-  "id": 1,
-  "title": "My First News Article",
-  "approved": false
-}
+
+### Approve an Article Example
+
+```http
+POST /api/articles/1/approve/
+Authorization: Bearer <editor_token>
 ```
 
-### Step 3: Editor Approves the Pending Article
-* **Request:** `POST /api/articles/1/approve/`
-* **Headers:** `Authorization: Bearer <editor_token>`
-* **Expected Response:**
-```json
-{
-  "approved": true
-}
-```
+The exact response fields depend on the current serializers and API implementation.
 
-### Step 4: Verify the Article Update Lifecycle Status
-* **Request:** `GET /api/articles/1/`
-* **Expected Response:**
-```json
-{
-  "id": 1,
-  "title": "My First News Article",
-  "approved": true
-}
-```
+## Sphinx Documentation
 
-### Step 5: Reader Retrieves the Feed Index
-* **Request:** `GET /api/articles/`
-* **Headers:** `Authorization: Bearer <reader_token>`
-* **Expected Response:**
-```json
-[
-  {
-    "id": 1,
-    "title": "My First News Article",
-    "approved": true
-  }
-]
-```
+NewsNow uses Sphinx/reStructuredText-compatible docstrings for key modules, classes, functions, models, views, and serializers. Generated documentation is stored in the `docs` directory and is intentionally included in the repository for reviewer access.
 
-### Step 6: Verify RBAC Security Assertions
-If a Reader or Journalist account attempts an unauthorized moderation approval action:
-* **Request:** `POST /api/articles/1/approve/`
-* **Expected Error Response Code:** `403 Forbidden`
+### Generate HTML Documentation
 
----
+If `conf.py` and the source `.rst` files are directly inside `docs`, run:
 
-## 🚦 Automated Quality Control Checks
-
-### Run Unit Tests
 ```powershell
-python manage.py test
+sphinx-build -b html docs docs\_build\html
 ```
 
-### Track Code Test Coverage Metrics
+If the Sphinx source files are inside `docs\source`, run instead:
+
 ```powershell
-coverage run manage.py test
-coverage report -m
+sphinx-build -b html docs\source docs\_build\html
 ```
 
-### Generate a Visual HTML Coverage Dashboard Report
+Use the command matching the repository's actual Sphinx directory structure.
+
+### View Generated Documentation
+
 ```powershell
-coverage html
-# Opens the reporting chart inside your default system browser window
-start htmlcov\index.html
+start docs\_build\html\index.html
 ```
 
-### Complete Pre-Deployment Python Syntax Validation Check
+The generated landing page should be located at:
+
+```text
+docs/_build/html/index.html
+```
+
+## Running with Docker
+
+Make sure Docker is installed and running.
+
+### Build the Docker Image
+
+From the repository root containing the `Dockerfile`, run:
+
 ```powershell
-python -m compileall .
+docker build -t newsnow .
 ```
 
----
+### Run the Docker Container
 
-## 📐 Application Architecture & Design Notes
+Use the local environment file so that secrets are not copied into the image:
 
-The core application namespace cleanly isolates components across bounded contexts: **Users, Publishers, Articles, Newsletters, Subscriptions, and Approval Logs**.
+```powershell
+docker run --name newsnow-app --env-file .env -p 8000:8000 newsnow
+```
 
+Open the application at:
+
+```text
+http://127.0.0.1:8000/
+```
+
+The command assumes that the committed Docker configuration starts the application on port `8000`. If the Docker configuration uses another port or startup command, use the values defined in the committed `Dockerfile`.
+
+### View Running Containers
+
+```powershell
+docker ps
+```
+
+### Stop and Remove the Container
+
+```powershell
+docker stop newsnow-app
+docker rm newsnow-app
+```
+
+### Rebuild After Code or Dependency Changes
+
+```powershell
+docker build --no-cache -t newsnow .
+```
+
+## Security
+
+- Passwords are processed using Django's configured password-hashing framework and are never stored as plain text.
+- Browser-facing forms use Django's CSRF protection.
+- Protected views and API endpoints require authentication and role-appropriate authorization.
+- `.env` is excluded from version control.
+- `.env.example` contains configuration placeholders only.
+- Real passwords, tokens, API keys, and production secrets must never be committed.
+- Users should replace example credentials with private local values.
+
+## Documentation and Maintainability
+
+- Sphinx/reStructuredText-compatible docstrings document key project components.
+- Models, forms, views, serializers, permissions, signals, templates, and static assets are separated according to their responsibilities.
+- Generated Sphinx HTML is committed so that reviewers can inspect the documentation.
+- `requirements.txt` records the Python dependencies needed to install the project.
+- The Docker configuration provides a repeatable application runtime.
+
+## Capstone Submission
+
+The `capstone.txt` file must contain only the public repository link:
+
+```text
+https://github.com/goolamh03/newsnow
+```
+
+Repository: [NewsNow on GitHub](https://github.com/goolamh03/newsnow)
+
+## License
+
+This project was created as a software engineering capstone submission. No separate open-source licence is asserted unless a licence file is included in the repository.
