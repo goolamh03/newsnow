@@ -160,4 +160,9 @@ class ApprovedArticleLogSerializer(serializers.ModelSerializer):
             Log fields exposed through the API."""
 
         model = ApprovedArticleLog
-        fields = ("id", "article", "logged_at", "payload")
+        fields = (
+            "id",
+            "article",
+            "logged_at",
+            "payload",
+        )

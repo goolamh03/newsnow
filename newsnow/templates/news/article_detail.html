@@ -24,12 +24,59 @@
             </div>
             {% endif %}
 
+            <!-- Publisher Information -->
+            {% if article.publisher %}
+            <div class="mb-3">
+                <span class="text-muted">Publisher:</span>
+                <strong>{{ article.publisher.name }}</strong>
+            </div>
+            {% endif %}
+
+            <!-- Subscription Toggles Control Section -->
+            {% if user.is_authenticated and user.role == "READER" %}
+            <div class="d-flex flex-wrap gap-2 mb-4">
+
+                <!-- FIXED: Fully restored the Journalist Subscription form and action parameters -->
+                <form action="{% url 'toggle-journalist-subscription' article.author.pk %}" method="POST"
+                    class="m-0 p-0">
+                    {% csrf_token %}
+                    {% if article.author in user.subscribed_journalists.all %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold">
+                        Unsubscribe Journalist
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-outline-primary btn-sm fw-semibold">
+                        Subscribe Journalist
+                    </button>
+                    {% endif %}
+                </form>
+
+                <!-- FIXED: Fully restored the Publisher Subscription opening form and action parameters -->
+                {% if article.publisher %}
+                <form action="{% url 'toggle-publisher-subscription' article.publisher.pk %}" method="POST"
+                    class="m-0 p-0">
+                    {% csrf_token %}
+                    {% if article.publisher in user.subscribed_publishers.all %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold">
+                        Unsubscribe Publisher
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-outline-success btn-sm fw-semibold">
+                        Subscribe Publisher
+                    </button>
+                    {% endif %}
+                </form>
+                {% endif %}
+
+            </div>
+            {% endif %}
+
             <!-- Preserved Paragraph Linebreaks Content Container -->
             <div class="article-content text-secondary fs-5 mb-5" style="line-height: 1.7;">
                 {{ article.content|linebreaks }}
             </div>
 
-            <!-- FIXED: Completely re-structured Action Blocks and conditional tag formatting hierarchies -->
+            <!-- Action Blocks and Conditional Handlers -->
             <div class="mt-5 pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-3">
 
                 <!-- Navigation Anchor CTA Return Pathway -->
@@ -41,11 +88,9 @@
                 {% if user.role == "EDITOR" or article.author == user %}
                 <!-- Conditional Management Controls Panel (Visible only to Author or Editor roles) -->
                 <div class="d-flex gap-2">
-                    <!-- FIXED: Restored opening anchor and corrected target route name properties -->
                     <a href="{% url 'article-update' article.pk %}" class="btn btn-sm btn-primary px-3 fw-semibold">
                         Edit Article
                     </a>
-                    <!-- FIXED: Restored opening anchor for safe path navigation mapping -->
                     <a href="{% url 'article-delete' article.pk %}" class="btn btn-sm btn-danger px-3 fw-semibold">
                         Delete Article
                     </a>

@@ -316,8 +316,34 @@ class ApprovedArticleLog(models.Model):
     received from external services.
 
     :ivar article:
-        Approved article associated with the log entry."""
+        Approved article associated with the log entry.
+    :ivar logged_at:
+        Date and time when the approval was logged.
+    :ivar payload:
+        Webhook payload received from the external service.
+    """
 
     article = models.ForeignKey(
-        Article, on_delete=models.CASCADE, related_name="approval_logs"
+        Article,
+        on_delete=models.CASCADE,
+        related_name="approval_logs",
     )
+
+    logged_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    payload = models.JSONField(
+        blank=True,
+        null=True,
+    )
+
+    class Meta:
+        ordering = ["-logged_at"]
+
+    def __str__(self):
+        """Return a readable representation."""
+        return (
+            f"Approval log for "
+            f"{self.article.title}"
+        )

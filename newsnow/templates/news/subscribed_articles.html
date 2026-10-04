@@ -47,14 +47,25 @@
 
                     <!-- Clean Separator & Anchored Action Controls Panel -->
                     <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+
                         <div class="text-muted small">
-                            By <span class="fw-semibold text-dark">{{ article.author.username|default:"Staff Writer"
-                                }}</span>
+
+                            By
+
+                            <span class="fw-semibold text-dark">
+                                {% if article.author %}
+                                {{ article.author.username }}
+                                {% else %}
+                                Staff Writer
+                                {% endif %}
+                            </span>
+
                             {% if article.created_at %}
                             <div class="text-secondary opacity-75 font-monospace" style="font-size: 0.75rem;">
                                 {{ article.created_at|date:"M d, Y" }}
                             </div>
                             {% endif %}
+
                         </div>
 
                         <a href="{% url 'article-detail' article.pk %}" class="btn btn-sm btn-primary px-3 fw-semibold">

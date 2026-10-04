@@ -2,6 +2,14 @@
 
 A Django-based news management platform that enables journalists to create articles, editors to review and approve content, and readers to consume approved articles. The application includes role-based access control, publisher subscriptions, newsletters, approval workflows, JWT-secured REST APIs, webhook integration, automated testing, and MariaDB persistence.
 
+## Installation and Execution
+
+The following instructions explain how to run NewsNow locally with a
+Python virtual environment, generate the Sphinx documentation, and run
+the application in Docker.
+
+### Clone the Repository
+
 ## 📋 Functional Requirements
 
 The system provides the following core functionality:
@@ -124,22 +132,44 @@ Role restrictions are applied to endpoints matching the following access mapping
 
 ---
 
-## 🚀 Setup on Windows PowerShell
+### 🚀 Setup on Windows PowerShell
 
-Execute the following commands in order within a PowerShell terminal window to prepare your local workspace:
+#### Step 1: Clone the Repository
 
 ```powershell
-# 1. Create the virtual environment layout container
+git clone https://github.com/goolamh03/newsnow
+```
+
+#### Step 2: Navigate into the Project Folder
+
+```powershell
+cd newsnow
+```
+
+#### Step 3: Create a Virtual Environment
+
+```powershell
 py -m venv .venv
+```
 
-# 2. Activate the local environment execution scope
+This creates the `.venv` folder inside the project directory.
+
+#### Step 4: Activate the Virtual Environment
+
+```powershell
 .venv\Scripts\Activate.ps1
+```
 
-# 3. Upgrade package installer and fetch project dependencies
+#### Step 5: Install Dependencies
+
+```powershell
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+pip install -r requirements.txt
+```
 
-# 4. Initialize local environment runtime configuration
+#### Step 6: Create Environment Configuration
+
+```powershell
 Copy-Item .env.example .env
 ```
 

@@ -12,43 +12,52 @@
     <div class="row g-4">
         {% for n in newsletters %}
         <div class="col-md-6 col-lg-4">
-            <!-- FIXED: Wrapped the newsletter content inside a proper card body structure -->
-            <section class="card shadow-sm h-100 border-0">
+            <section class="card shadow-sm h-100 border-0 bg-white">
                 <div class="card-body p-4 d-flex flex-column">
 
-                    <h2 class="card-title h4 fw-bold text-dark mb-2">
-                        {{ n.title }}
-                    </h2>
+                    <div class="d-flex gap-3 mb-3">
 
-                    <p class="card-text text-secondary small mb-4">
-                        {{ n.description|default:"No description provided for this edition." }}
-                    </p>
+                        {% if n.thumbnail %}
+                        <img src="{{ n.thumbnail.url }}" alt="{{ n.title }}" width="100" height="80"
+                            class="rounded object-fit-cover flex-shrink-0">
+                        {% endif %}
 
-                    <!-- Approved Articles Sub-section List -->
-                    <div class="mt-auto">
-                        <h3 class="h6 text-uppercase text-muted font-monospace fw-bold mb-3"
-                            style="letter-spacing: 1px;">
-                            Included Articles
-                        </h3>
+                        <div>
 
-                        <!-- FIXED: Converted standard bulleted lists to a clean, borderless list-group element layout -->
-                        <div class="list-group list-group-flush">
-                            <!-- Track to check if any articles actually pass the approval filter statement inside the loop -->
-                            {% widthratio 1 1 0 as approved_count %}
+                            <h2 class="card-title h4 fw-bold text-dark mb-2">
+                                {{ n.title }}
+                            </h2>
 
-                            {% for a in n.articles.all %}
-                            {% if a.approved %}
-                            <a href="{% url 'article-detail' a.pk %}"
-                                class="list-group-item list-group-item-action border-0 px-0 py-2 d-flex align-items-start text-primary">
-                                <span class="me-2 text-secondary">&bull;</span>
-                                <span class="text-wrap fw-medium">{{ a.title }}</span>
-                            </a>
-                            {% endif %}
-                            {% endfor %}
+                            <!-- FIXED: Restored the missing opening anchor tag and wrapped it in a clean Bootstrap button style -->
+                            <div class="mb-4">
+                                <a href="{% url 'newsletter-detail' n.pk %}"
+                                    class="btn btn-sm btn-outline-primary px-3 fw-semibold">
+                                    Read Newsletter &rarr;
+                                </a>
+                            </div>
+
+                            <!-- Approved Articles Sub-section List -->
+                            <div class="mt-auto pt-3 border-top">
+                                <h3 class="h6 text-uppercase text-muted font-monospace fw-bold mb-3"
+                                    style="letter-spacing: 1px;">
+                                    Included Articles
+                                </h3>
+
+                                <!-- borderless list-group element layout -->
+                                <div class="list-group list-group-flush">
+                                    {% for a in n.articles.all %}
+                                    {% if a.approved %}
+                                    <a href="{% url 'article-detail' a.pk %}"
+                                        class="list-group-item list-group-item-action border-0 px-0 py-1 d-flex align-items-start text-primary">
+                                        <span class="me-2 text-secondary">&bull;</span>
+                                        <span class="text-wrap fw-medium small">{{ a.title }}</span>
+                                    </a>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+
                         </div>
-                    </div>
-
-                </div>
             </section>
         </div>
         {% empty %}

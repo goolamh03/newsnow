@@ -2,82 +2,126 @@
 
 {% block content %}
 <div class="container py-4">
-    <!-- Header Block Section Layout -->
+
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h2 mb-1 text-dark">Approval Queue</h1>
-            <p class="text-muted mb-0">Review, approve, or manage pending article submissions.</p>
+            <h1 class="h2 mb-1 text-dark fw-bold">Approval Queue</h1>
+            <p class="text-muted mb-0">
+                Review, approve, edit, or delete pending article submissions.
+            </p>
         </div>
-        <!-- Quick Stats Badge Tracker -->
-        <span class="badge bg-primary rounded-pill px-3 py-2 fs-6">
+
+        <span class="badge bg-primary rounded-pill px-3 py-2 fs-6 shadow-sm">
             {{ articles|length }} Pending
         </span>
     </div>
 
-    <!-- Main Dynamic Data Content Evaluation Wrapper -->
     {% if articles %}
-    <div class="card shadow-sm border-0">
+
+    <div class="card shadow-sm border-0 bg-white rounded-3">
         <div class="table-responsive">
+
             <table class="table table-hover align-middle mb-0">
+
                 <thead class="table-light">
                     <tr>
-                        <th scope="col" class="ps-4" style="width: 45%;">Article Title</th>
-                        <th scope="col" style="width: 20%;">Author</th>
-                        <th scope="col" style="width: 15%;">Submitted Date</th>
-                        <th scope="col" class="text-end pe-4" style="width: 20%;">Actions</th>
+                        <th class="ps-4" style="width: 45%;">Article Title</th>
+                        <th style="width: 20%;">Author</th>
+                        <th style="width: 15%;">Submitted Date</th>
+                        <th class="text-end pe-4" style="width: 20%;">Actions</th>
                     </tr>
                 </thead>
+
                 <tbody>
+
                     {% for article in articles %}
                     <tr>
-                        <!-- 1. Article Meta Details Display Column -->
+
+                        <!-- Article Info -->
                         <td class="ps-4">
-                            <div class="fw-bold text-dark mb-1">{{ article.title }}</div>
+                            <div class="fw-bold text-dark mb-1">
+                                {{ article.title }}
+                            </div>
+
                             <span class="text-muted small">
                                 {{ article.content|truncatewords:10 }}
                             </span>
                         </td>
 
-                        <!-- 2. Author Profile Meta Target Data Column -->
+                        <!-- Author -->
                         <td>
                             <div class="text-secondary small fw-semibold">
                                 {{ article.author.username }}
                             </div>
                         </td>
 
-                        <!-- 3. Date Meta Parsing Display Layout Column -->
+                        <!-- Date -->
                         <td class="text-muted small">
                             {{ article.created_at|date:"M d, Y H:i"|default:"Recently" }}
                         </td>
 
-                        <!-- 4. Action Target Modification Directives Anchor Column -->
+                        <!-- Action Buttons -->
                         <td class="text-end pe-4">
-                            <!-- FIXED: Formatted action link targeting detail verification endpoint context hooks -->
-                            <a href="{% url 'article-approve' article.pk %}"
-                                class="btn btn-sm btn-outline-primary px-3 fw-semibold">
-                                Review Article
-                            </a>
+
+                            <!-- FIXED: Restored all missing opening <a> tags and upgraded elements to cohesive button components -->
+                            <div class="action-buttons">
+
+                                <!-- Review / Approve Page Link Component -->
+                                <a href="{% url 'article-approve' article.pk %}"
+                                    class="btn btn-sm btn-primary fw-semibold px-3">
+                                    Review
+                                </a>
+
+                                <!-- Edit Pending Article Link Component -->
+                                <a href="{% url 'article-update' article.pk %}"
+                                    class="btn btn-sm btn-outline-secondary fw-medium px-3">
+                                    Edit
+                                </a>
+
+                                <!-- Delete Pending Article Link Component -->
+                                <a href="{% url 'article-delete' article.pk %}"
+                                    class="btn btn-sm btn-outline-danger fw-medium px-3">
+                                    Delete
+                                </a>
+
+                            </div>
+
                         </td>
+
                     </tr>
                     {% endfor %}
+
                 </tbody>
+
             </table>
+
         </div>
     </div>
+
     {% else %}
-    <!-- Empty State Fallback Layout Frame Alignment -->
-    <div class="card text-center shadow-sm p-5 border-0 bg-light">
-        <div class="card-body">
-            <div class="mb-3 text-success fs-1">
-                🎉
-            </div>
-            <h2 class="h5 card-title text-dark">Queue Empty!</h2>
-            <p class="card-text text-muted max-width-auto mx-auto" style="max-width: 420px;">
-                There are currently no articles awaiting review. All submissions have been successfully distributed or
-                handled.
+
+    <!-- Empty State Dashboard Fallback Container Window -->
+    <div class="card text-center shadow-sm p-5 border-0 bg-light rounded-3">
+
+        <div class="card-body py-4">
+
+            <div class="display-6 text-muted mb-3">🎉</div>
+
+            <h2 class="h5 card-title text-dark fw-bold mb-2">
+                Queue Empty!
+            </h2>
+
+            <p class="card-text text-muted mx-auto mb-0" style="max-width:420px;">
+                There are currently no articles awaiting review. All submissions have been successfully cleared and
+                distributed.
             </p>
+
         </div>
+
     </div>
+
     {% endif %}
+
 </div>
 {% endblock %}

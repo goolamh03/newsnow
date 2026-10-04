@@ -20,7 +20,7 @@ Create Article
                 {% endif %}
             </h1>
 
-            <form method="post" novalidate>
+            <form method="post" novalidate enctype="multipart/form-data">
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}
